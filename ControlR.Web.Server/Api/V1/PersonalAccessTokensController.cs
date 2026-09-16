@@ -21,9 +21,9 @@ public class PersonalAccessTokensController : ControllerBase
   [HttpPost]
   [Authorize(Policy = PolicyNames.RequirePersonalAccessTokenSelfWrite)]
   [ProducesResponseType<CreatePersonalAccessTokenResponseDto>(StatusCodes.Status201Created)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<CreatePersonalAccessTokenResponseDto>> Create(
     [FromServices] IPersonalAccessTokenManager personalAccessTokenManager,
     [FromServices] UserManager<AppUser> userManager,
@@ -86,9 +86,9 @@ public class PersonalAccessTokensController : ControllerBase
   [HttpDelete("{id:guid}")]
   [Authorize(Policy = PolicyNames.RequirePersonalAccessTokenSelfWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<IActionResult> Delete(
     [FromServices] IPersonalAccessTokenManager personalAccessTokenManager,
     [FromServices] UserManager<AppUser> userManager,
@@ -124,9 +124,9 @@ public class PersonalAccessTokensController : ControllerBase
   [HttpGet]
   [Authorize(Policy = PolicyNames.RequirePersonalAccessTokenSelfRead)]
   [ProducesResponseType<PersonalAccessTokensResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<PersonalAccessTokensResponseDto>> GetAll(
     [FromServices] IPersonalAccessTokenManager personalAccessTokenManager,
     [FromServices] UserManager<AppUser> userManager,
@@ -156,9 +156,9 @@ public class PersonalAccessTokensController : ControllerBase
   [HttpPut("{id:guid}")]
   [Authorize(Policy = PolicyNames.RequirePersonalAccessTokenSelfWrite)]
   [ProducesResponseType<PersonalAccessTokenResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<PersonalAccessTokenResponseDto>> Update(
     [FromServices] IPersonalAccessTokenManager personalAccessTokenManager,
     [FromServices] UserManager<AppUser> userManager,

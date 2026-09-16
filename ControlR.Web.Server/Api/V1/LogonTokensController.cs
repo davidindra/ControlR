@@ -13,8 +13,8 @@ public class LogonTokensController : ControllerBase
 {
   [HttpPost("external")]
   [ProducesResponseType<V1Dtos.LogonTokenResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
   public async Task<ActionResult<V1Dtos.LogonTokenResponseDto>> CreateForExternal(
     [FromServices] AppDb appDb,
     [FromServices] IAuthorizationService authorizationService,
@@ -69,9 +69,9 @@ public class LogonTokensController : ControllerBase
 
   [HttpPost("user")]
   [ProducesResponseType<V1Dtos.LogonTokenResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
   public async Task<ActionResult<V1Dtos.LogonTokenResponseDto>> CreateForUser(
     [FromServices] AppDb appDb,
     [FromServices] IAuthorizationService authorizationService,

@@ -28,10 +28,10 @@ public class PermissionAssignmentsController(
   [HttpPost("presets/apply")]
   [Authorize(Policy = PolicyNames.RequirePermissionAssignmentsWrite)]
   [ProducesResponseType<int>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<int>> ApplyPresets(
     [FromQuery] Guid tenantId,
     [FromBody] ApplyPermissionPresetsRequestDto request,
@@ -70,10 +70,10 @@ public class PermissionAssignmentsController(
   [HttpPost]
   [Authorize(Policy = PolicyNames.RequirePermissionAssignmentsWrite)]
   [ProducesResponseType<PermissionAssignmentDto>(StatusCodes.Status201Created)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<PermissionAssignmentDto>> Create(
     [FromQuery] Guid tenantId,
     [FromBody] CreatePermissionAssignmentRequestDto request,
@@ -124,10 +124,10 @@ public class PermissionAssignmentsController(
   [HttpPost("batch")]
   [Authorize(Policy = PolicyNames.RequirePermissionAssignmentsWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> CreateMany(
     [FromQuery] Guid tenantId,
     [FromBody] CreateManyPermissionAssignmentsRequestDto request,
@@ -162,10 +162,10 @@ public class PermissionAssignmentsController(
   [HttpDelete("{assignmentId:guid}")]
   [Authorize(Policy = PolicyNames.RequirePermissionAssignmentsWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> Delete(
     [FromRoute] Guid assignmentId,
     [FromQuery] Guid tenantId,
@@ -197,10 +197,10 @@ public class PermissionAssignmentsController(
   [HttpPost("batch-delete")]
   [Authorize(Policy = PolicyNames.RequirePermissionAssignmentsWrite)]
   [ProducesResponseType<DeleteManyPermissionAssignmentsResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<DeleteManyPermissionAssignmentsResponseDto>> DeleteMany(
     [FromQuery] Guid tenantId,
     [FromBody] DeleteManyPermissionAssignmentsRequestDto request,
@@ -234,9 +234,9 @@ public class PermissionAssignmentsController(
   [HttpGet]
   [Authorize(Policy = PolicyNames.RequirePermissionAssignmentsRead)]
   [ProducesResponseType<PermissionAssignmentsResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<PermissionAssignmentsResponseDto>> GetByPrincipal(
     [FromQuery] Guid tenantId,
     [FromQuery] PermissionPrincipalKind principalKind,
@@ -268,9 +268,9 @@ public class PermissionAssignmentsController(
   [HttpGet("catalog")]
   [Authorize(Policy = PolicyNames.RequirePermissionAssignmentsRead)]
   [ProducesResponseType<PermissionCatalogResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<PermissionCatalogResponseDto>> GetCatalog(
     [FromQuery] Guid tenantId,
     CancellationToken cancellationToken)
@@ -303,9 +303,9 @@ public class PermissionAssignmentsController(
   [HttpGet("presets")]
   [Authorize(Policy = PolicyNames.RequirePermissionAssignmentsRead)]
   [ProducesResponseType<PermissionPresetsResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<PermissionPresetsResponseDto>> GetPresets(
     [FromQuery] Guid tenantId,
     CancellationToken cancellationToken)
@@ -337,10 +337,10 @@ public class PermissionAssignmentsController(
   [HttpPost("replace")]
   [Authorize(Policy = PolicyNames.RequirePermissionAssignmentsWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> Replace(
     [FromQuery] Guid tenantId,
     [FromBody] ReplacePermissionAssignmentsRequestDto request,
@@ -377,10 +377,10 @@ public class PermissionAssignmentsController(
   [HttpPut("{assignmentId:guid}")]
   [Authorize(Policy = PolicyNames.RequirePermissionAssignmentsWrite)]
   [ProducesResponseType<PermissionAssignmentDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<PermissionAssignmentDto>> Update(
     [FromRoute] Guid assignmentId,
     [FromQuery] Guid tenantId,

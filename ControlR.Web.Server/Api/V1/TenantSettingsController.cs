@@ -19,9 +19,9 @@ public class TenantSettingsController : ControllerBase
   [HttpDelete("{settingName}")]
   [Authorize(Policy = PolicyNames.RequireTenantSettingsWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> DeleteSetting(
     [FromServices] AppDb appDb,
     [FromRoute] string settingName,
@@ -56,8 +56,8 @@ public class TenantSettingsController : ControllerBase
   [HttpGet]
   [Authorize(Policy = PolicyNames.RequireTenantSettingsRead)]
   [ProducesResponseType<TenantSettingsDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<TenantSettingsDto>> GetAll(
     [FromServices] ITenantSettingsManager tenantSettingsManager,
     [FromQuery] Guid tenantId,
@@ -76,9 +76,9 @@ public class TenantSettingsController : ControllerBase
   [Authorize(Policy = PolicyNames.RequireTenantSettingsRead)]
   [ProducesResponseType<TenantSettingResponseDto>(StatusCodes.Status200OK)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<TenantSettingResponseDto>> GetSetting(
     [FromServices] AppDb appDb,
     [FromRoute] string settingName,
@@ -113,9 +113,9 @@ public class TenantSettingsController : ControllerBase
   [HttpPost]
   [Authorize(Policy = PolicyNames.RequireTenantSettingsWrite)]
   [ProducesResponseType<TenantSettingResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<TenantSettingResponseDto>> SetSetting(
     [FromServices] ITenantSettingsManager tenantSettingsManager,
     [FromQuery] Guid tenantId,
@@ -141,9 +141,9 @@ public class TenantSettingsController : ControllerBase
   [HttpPut]
   [Authorize(Policy = PolicyNames.RequireTenantSettingsWrite)]
   [ProducesResponseType<TenantSettingsDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<TenantSettingsDto>> SetSettings(
     [FromServices] ITenantSettingsManager tenantSettingsManager,
     [FromQuery] Guid tenantId,

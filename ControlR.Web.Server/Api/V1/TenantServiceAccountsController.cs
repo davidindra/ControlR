@@ -18,9 +18,9 @@ public class TenantServiceAccountsController(
   [HttpPost("{serviceAccountId:guid}/credentials")]
   [Authorize(Policy = PolicyNames.RequireServiceAccountRotateCredentials)]
   [ProducesResponseType<CreateServiceAccountCredentialResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(StatusCodes.Status409Conflict)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
   public async Task<ActionResult<CreateServiceAccountCredentialResponseDto>> AddCredential(
     Guid tenantId,
     Guid serviceAccountId,
@@ -50,9 +50,9 @@ public class TenantServiceAccountsController(
   [HttpPost]
   [Authorize(Policy = PolicyNames.RequireServiceAccountWrite)]
   [ProducesResponseType<TenantServiceAccountDto>(StatusCodes.Status201Created)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status409Conflict)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
   public async Task<ActionResult<TenantServiceAccountDto>> Create(
     Guid tenantId,
     [FromBody] CreateServiceAccountRequestDto request,
@@ -84,9 +84,9 @@ public class TenantServiceAccountsController(
   [HttpDelete("{serviceAccountId:guid}")]
   [Authorize(Policy = PolicyNames.RequireServiceAccountWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> Delete(
     Guid tenantId,
     Guid serviceAccountId,
@@ -114,8 +114,8 @@ public class TenantServiceAccountsController(
   [HttpGet("{serviceAccountId:guid}")]
   [Authorize(Policy = PolicyNames.RequireServiceAccountRead)]
   [ProducesResponseType<TenantServiceAccountDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<TenantServiceAccountDto>> Get(
     Guid tenantId,
     Guid serviceAccountId,
@@ -138,7 +138,7 @@ public class TenantServiceAccountsController(
   [HttpGet]
   [Authorize(Policy = PolicyNames.RequireServiceAccountRead)]
   [ProducesResponseType<TenantServiceAccountsResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<TenantServiceAccountsResponseDto>> GetAll(
     Guid tenantId,
     CancellationToken cancellationToken)
@@ -158,9 +158,9 @@ public class TenantServiceAccountsController(
   [HttpDelete("{serviceAccountId:guid}/credentials/{credentialId:guid}/purge")]
   [Authorize(Policy = PolicyNames.RequireServiceAccountRotateCredentials)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> PurgeCredential(
     Guid tenantId,
     Guid serviceAccountId,
@@ -190,8 +190,8 @@ public class TenantServiceAccountsController(
   [HttpDelete("{serviceAccountId:guid}/credentials/{credentialId:guid}")]
   [Authorize(Policy = PolicyNames.RequireServiceAccountRotateCredentials)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> RevokeCredential(
     Guid tenantId,
     Guid serviceAccountId,
@@ -221,9 +221,9 @@ public class TenantServiceAccountsController(
   [HttpPut("{serviceAccountId:guid}")]
   [Authorize(Policy = PolicyNames.RequireServiceAccountWrite)]
   [ProducesResponseType<TenantServiceAccountDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<TenantServiceAccountDto>> Update(
     Guid tenantId,
     Guid serviceAccountId,

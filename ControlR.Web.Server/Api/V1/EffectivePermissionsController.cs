@@ -20,10 +20,10 @@ public class EffectivePermissionsController(
   [HttpGet("{principalId:guid}")]
   [Authorize(Policy = PolicyNames.RequirePermissionAssignmentsRead)]
   [ProducesResponseType<EffectivePermissionQueryResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<EffectivePermissionQueryResponseDto>> GetEffectivePermission(
     Guid principalId,
     [FromQuery] Guid tenantId,

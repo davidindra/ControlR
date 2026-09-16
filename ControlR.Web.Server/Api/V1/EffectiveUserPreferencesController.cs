@@ -18,8 +18,8 @@ public class EffectiveUserPreferencesController : ControllerBase
 {
   [HttpGet]
   [ProducesResponseType<EffectiveUserPreferencesDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<EffectiveUserPreferencesDto>> GetAll(
     [FromServices] IEffectiveUserPreferencesResolver effectiveUserPreferencesResolver,
     [FromQuery] Guid tenantId,

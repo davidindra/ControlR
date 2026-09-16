@@ -24,10 +24,10 @@ public class CustomersController(ICustomerManager customerManager) : ControllerB
   [HttpPost("{customerId:guid}/devices")]
   [Authorize(Policy = PolicyNames.RequireCustomersWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> AssignDevices(
     [FromRoute] Guid customerId,
     [FromQuery] Guid tenantId,
@@ -61,10 +61,10 @@ public class CustomersController(ICustomerManager customerManager) : ControllerB
   [HttpPost]
   [Authorize(Policy = PolicyNames.RequireCustomersWrite)]
   [ProducesResponseType<CustomerDto>(StatusCodes.Status201Created)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status409Conflict)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
   public async Task<ActionResult<CustomerDto>> Create(
     [FromQuery] Guid tenantId,
     [FromBody] CreateCustomerRequestDto request,
@@ -100,9 +100,9 @@ public class CustomersController(ICustomerManager customerManager) : ControllerB
   [HttpDelete("{customerId:guid}")]
   [Authorize(Policy = PolicyNames.RequireCustomersWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> Delete(
     [FromRoute] Guid customerId,
     [FromQuery] Guid tenantId,
@@ -133,9 +133,9 @@ public class CustomersController(ICustomerManager customerManager) : ControllerB
   [HttpGet("{customerId:guid}")]
   [Authorize(Policy = PolicyNames.RequireCustomersRead)]
   [ProducesResponseType<CustomerDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<CustomerDto>> Get(
     [FromRoute] Guid customerId,
     [FromQuery] Guid tenantId,
@@ -158,8 +158,8 @@ public class CustomersController(ICustomerManager customerManager) : ControllerB
   [HttpGet]
   [Authorize(Policy = PolicyNames.RequireCustomersRead)]
   [ProducesResponseType<CustomersResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<CustomersResponseDto>> GetAll(
     [FromQuery] Guid tenantId,
     CancellationToken cancellationToken)
@@ -180,11 +180,11 @@ public class CustomersController(ICustomerManager customerManager) : ControllerB
   [HttpPut("{customerId:guid}")]
   [Authorize(Policy = PolicyNames.RequireCustomersWrite)]
   [ProducesResponseType<CustomerDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(StatusCodes.Status409Conflict)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
   public async Task<ActionResult<CustomerDto>> Update(
     [FromRoute] Guid customerId,
     [FromQuery] Guid tenantId,

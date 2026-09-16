@@ -18,7 +18,7 @@ public class UserServerSettingsController : ControllerBase
 {
   [HttpGet("decommission-status")]
   [ProducesResponseType<DecommissionServerResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
   public ActionResult<DecommissionServerResponseDto> GetDecommissionStatus(
     [FromServices] IOptionsMonitor<ServerLifecycleOptions> serverLifecycleOptions)
   {
@@ -28,7 +28,7 @@ public class UserServerSettingsController : ControllerBase
 
   [HttpGet("file-upload-max-size")]
   [ProducesResponseType<FileUploadMaxSizeResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
   public ActionResult<FileUploadMaxSizeResponseDto> GetFileUploadMaxSize(
     [FromServices] IOptionsMonitor<AppOptions> appOptions)
   {

@@ -30,9 +30,9 @@ public class AuthorizationChangeLogsController(
 
   [HttpGet]
   [ProducesResponseType<AuthorizationChangeLogsResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<AuthorizationChangeLogsResponseDto>> Get(
     [FromQuery] Guid tenantId,
     [FromQuery] AuthorizationChangeLogSearchQueryDto searchQuery,
@@ -113,9 +113,9 @@ public class AuthorizationChangeLogsController(
   /// </summary>
   [HttpGet("server")]
   [ProducesResponseType<AuthorizationChangeLogsResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<AuthorizationChangeLogsResponseDto>> GetServerScoped(
     [FromQuery] AuthorizationChangeLogSearchQueryDto searchQuery,
     CancellationToken cancellationToken)

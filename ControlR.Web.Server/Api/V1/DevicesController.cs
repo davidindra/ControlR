@@ -23,7 +23,7 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
 
   [HttpDelete("{deviceId:guid}")]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> DeleteDevice(
     [FromServices] AppDb appDb,
     [FromServices] IAuthorizationService authorizationService,
@@ -148,8 +148,8 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
 
   [HttpGet("{deviceId:guid}/desktop-sessions")]
   [ProducesResponseType<V1Dtos.DesktopSessionsResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(StatusCodes.Status409Conflict)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
   public async Task<ActionResult<V1Dtos.DesktopSessionsResponseDto>> GetDesktopSessions(
     [FromRoute] Guid deviceId,
     [FromServices] AppDb appDb,
@@ -218,7 +218,7 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
 
   [HttpGet("{deviceId:guid}")]
   [ProducesResponseType<DeviceResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<DeviceResponseDto>> GetDevice(
     [FromServices] AppDb appDb,
     [FromServices] IAgentVersionProvider agentVersionProvider,
@@ -327,8 +327,8 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
 
   [HttpPatch("{deviceId:guid}/alias")]
   [ProducesResponseType<DeviceResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<DeviceResponseDto>> UpdateDeviceAlias(
     [FromRoute] Guid deviceId,
     [FromBody] V1Dtos.UpdateDeviceAliasRequestDto requestDto,

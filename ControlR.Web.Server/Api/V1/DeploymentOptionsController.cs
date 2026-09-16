@@ -21,8 +21,8 @@ public class DeploymentOptionsController(
   [HttpGet]
   [Authorize(Policy = PolicyNames.RequireAgentInstall)]
   [ProducesResponseType<DeploymentOptionsDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<DeploymentOptionsDto>> Get(
     [FromQuery] Guid tenantId,
     CancellationToken cancellationToken)
@@ -49,8 +49,8 @@ public class DeploymentOptionsController(
   [HttpPost("tag-capability")]
   [Authorize(Policy = PolicyNames.RequireAgentInstall)]
   [ProducesResponseType<DeploymentTagCapabilityResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<DeploymentTagCapabilityResponseDto>> GetTagCapability(
     [FromQuery] Guid tenantId,
     [FromBody] DeploymentTagCapabilityRequestDto request,

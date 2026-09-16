@@ -20,8 +20,8 @@ public class ServerAlertController(AppDb appDb) : ControllerBase
 
   [HttpGet]
   [ProducesResponseType<ServerAlertResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<ServerAlertResponseDto>> GetAlert()
   {
     var alert = await _appDb.ServerAlerts
@@ -39,8 +39,8 @@ public class ServerAlertController(AppDb appDb) : ControllerBase
   [HttpPost]
   [Authorize(Policy = PolicyNames.RequireServerSettingsWrite)]
   [ProducesResponseType<ServerAlertResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<ServerAlertResponseDto>> UpdateAlert(
     [FromBody] ServerAlertRequestDto request)
   {

@@ -16,8 +16,8 @@ public class TenantsController(ITenantProvisioningService tenantProvisioningServ
   [EndpointSummary("Creates a new tenant.")]
   [Authorize(Policy = PolicyNames.RequireServerTenantsWrite)]
   [ProducesResponseType<CreateTenantResponseDto>(StatusCodes.Status201Created)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
   public async Task<ActionResult<CreateTenantResponseDto>> Create(
     [FromBody] CreateTenantRequestDto request,
     CancellationToken cancellationToken)
@@ -35,8 +35,8 @@ public class TenantsController(ITenantProvisioningService tenantProvisioningServ
   [EndpointSummary("Deletes a tenant by its identifier.")]
   [Authorize(Policy = PolicyNames.RequireServerTenantsDelete)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
   public async Task<ActionResult> Delete(
     [FromRoute] Guid tenantId,
     CancellationToken cancellationToken)
@@ -54,7 +54,7 @@ public class TenantsController(ITenantProvisioningService tenantProvisioningServ
   [EndpointSummary("Gets a single tenant by its identifier.")]
   [Authorize(Policy = PolicyNames.RequireServerTenantsRead)]
   [ProducesResponseType<GetTenantResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<GetTenantResponseDto>> Get(
     [FromRoute] Guid tenantId,
     CancellationToken cancellationToken)
@@ -92,9 +92,9 @@ public class TenantsController(ITenantProvisioningService tenantProvisioningServ
   [EndpointSummary("Updates an existing tenant's name.")]
   [Authorize(Policy = PolicyNames.RequireServerTenantsWrite)]
   [ProducesResponseType<GetTenantResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
   public async Task<ActionResult<GetTenantResponseDto>> Update(
     [FromRoute] Guid tenantId,
     [FromBody] UpdateTenantRequestDto request,

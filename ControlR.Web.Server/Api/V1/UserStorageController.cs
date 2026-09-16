@@ -19,9 +19,9 @@ public class UserStorageController : ControllerBase
 {
   [HttpDelete("{key}")]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> DeleteItem(
     [FromServices] IUserStorageManager userStorageManager,
     [FromRoute] string key,
@@ -45,8 +45,8 @@ public class UserStorageController : ControllerBase
   [HttpGet("{key}")]
   [ProducesResponseType<UserStorageResponseDto>(StatusCodes.Status200OK)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<UserStorageResponseDto>> GetItem(
     [FromServices] IUserStorageManager userStorageManager,
     [FromRoute] string key,
@@ -74,9 +74,9 @@ public class UserStorageController : ControllerBase
 
   [HttpPost]
   [ProducesResponseType<UserStorageResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<UserStorageResponseDto>> SetItem(
     [FromServices] IUserStorageManager userStorageManager,
     [FromQuery] Guid tenantId,
