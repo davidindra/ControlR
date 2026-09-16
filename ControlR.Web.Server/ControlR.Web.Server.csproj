@@ -33,6 +33,10 @@
 		<PackageReference Include="AspNet.Security.OAuth.GitHub" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" />
 		<PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" />
+		<PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers">
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
 		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
 		<PackageReference Include="Microsoft.Web.LibraryManager.Build" />
 		<PackageReference Include="Scalar.AspNetCore" />
@@ -66,6 +70,14 @@
 	</ItemGroup>
 	<ItemGroup>
 		<Folder Include="Data\Migrations\" />
+	</ItemGroup>
+	<!--
+		The API surface V1 controllers may not call. The diagnostic is scoped by .editorconfig: silent
+		across the project, error under Api/V1, because every V1 failure has to ship a ProblemDetails
+		body while the Internal/BFF routes still answer some of them with bare strings.
+	-->
+	<ItemGroup>
+		<AdditionalFiles Include="BannedSymbols.txt" />
 	</ItemGroup>
 	<Target Name="RenameDefaultOpenApiDocument" AfterTargets="GenerateOpenApiDocuments">
 		<Move SourceFiles="$(OpenApiDocumentsDirectory)\ControlR.Web.Server.json"

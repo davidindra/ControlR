@@ -1,0 +1,7 @@
+M:Microsoft.AspNetCore.Mvc.ControllerBase.BadRequest(System.Object)	V1 answers a failure with a ProblemDetails body. Use Problem(detail: ..., statusCode: StatusCodes.Status400BadRequest, title: V1ProblemTitles.InvalidRequest).
+M:Microsoft.AspNetCore.Mvc.ControllerBase.BadRequest(Microsoft.AspNetCore.Mvc.ModelBinding.ModelStateDictionary)	V1 answers a failure with a ProblemDetails body. Use Problem(...), putting rejected values in the extensions dictionary.
+M:Microsoft.AspNetCore.Mvc.ControllerBase.Conflict(System.Object)	V1 answers a failure with a ProblemDetails body. Use Problem(detail: ..., statusCode: StatusCodes.Status409Conflict, title: V1ProblemTitles.Conflict).
+M:Microsoft.AspNetCore.Mvc.ControllerBase.Conflict(Microsoft.AspNetCore.Mvc.ModelBinding.ModelStateDictionary)	V1 answers a failure with a ProblemDetails body. Use Problem(...), putting rejected values in the extensions dictionary.
+M:Microsoft.AspNetCore.Mvc.ControllerBase.NotFound(System.Object)	V1 answers a failure with a ProblemDetails body. Use Problem(statusCode: StatusCodes.Status404NotFound, title: V1ProblemTitles.NotFound).
+M:Microsoft.AspNetCore.Mvc.ControllerBase.Unauthorized(System.Object)	V1 answers a failure with a ProblemDetails body. Use Problem(...), or the bodyless Unauthorized() if there is nothing to say.
+M:Microsoft.AspNetCore.Mvc.ControllerBase.StatusCode(System.Int32,System.Object)	V1 answers a failure with a ProblemDetails body. Use Problem(detail: ..., statusCode: ..., title: ...).
