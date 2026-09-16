@@ -44,7 +44,10 @@ public class PermissionAssignmentsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("Permission assignment context not found.");
+      return Problem(
+        detail: "Permission assignment context not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _permissionAssignmentManager.ApplyPresets(
@@ -83,7 +86,10 @@ public class PermissionAssignmentsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("Permission assignment context not found.");
+      return Problem(
+        detail: "Permission assignment context not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _permissionAssignmentManager.Create(
@@ -134,7 +140,10 @@ public class PermissionAssignmentsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("Permission assignment context not found.");
+      return Problem(
+        detail: "Permission assignment context not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _permissionAssignmentManager.CreateMany(
@@ -169,7 +178,10 @@ public class PermissionAssignmentsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("Permission assignment context not found.");
+      return Problem(
+        detail: "Permission assignment context not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _permissionAssignmentManager.Delete(
@@ -201,7 +213,10 @@ public class PermissionAssignmentsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("Permission assignment context not found.");
+      return Problem(
+        detail: "Permission assignment context not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _permissionAssignmentManager.DeleteMany(
@@ -235,7 +250,10 @@ public class PermissionAssignmentsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("Permission assignment context not found.");
+      return Problem(
+        detail: "Permission assignment context not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var assignments = await _permissionAssignmentManager.GetByPrincipal(
@@ -264,7 +282,10 @@ public class PermissionAssignmentsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("Permission assignment context not found.");
+      return Problem(
+        detail: "Permission assignment context not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var entries = PermissionCatalog.All.Values
@@ -296,7 +317,10 @@ public class PermissionAssignmentsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("Permission assignment context not found.");
+      return Problem(
+        detail: "Permission assignment context not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var presets = PermissionPresets.All
@@ -329,7 +353,10 @@ public class PermissionAssignmentsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("Permission assignment context not found.");
+      return Problem(
+        detail: "Permission assignment context not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _permissionAssignmentManager.ReplaceForPrincipal(
@@ -367,7 +394,10 @@ public class PermissionAssignmentsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("Permission assignment context not found.");
+      return Problem(
+        detail: "Permission assignment context not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _permissionAssignmentManager.Update(

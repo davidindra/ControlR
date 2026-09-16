@@ -38,7 +38,7 @@ public class DeviceTagsController : ControllerBase
 
     if (device is null)
     {
-      return NotFound("Device not found.");
+      return Problem(statusCode: StatusCodes.Status404NotFound, title: V1ProblemTitles.NotFound);
     }
 
     var authResult = await authorizationService.AuthorizeAsync(User, device, DeviceResourcePolicies.TagsWrite);
@@ -52,7 +52,7 @@ public class DeviceTagsController : ControllerBase
 
     if (tag is null)
     {
-      return NotFound("Tag not found.");
+      return Problem(statusCode: StatusCodes.Status404NotFound, title: V1ProblemTitles.NotFound);
     }
 
     device.Tags ??= [];
@@ -86,7 +86,7 @@ public class DeviceTagsController : ControllerBase
 
     if (device is null)
     {
-      return NotFound("Device not found.");
+      return Problem(statusCode: StatusCodes.Status404NotFound, title: V1ProblemTitles.NotFound);
     }
 
     var authResult = await authorizationService.AuthorizeAsync(User, device, DeviceResourcePolicies.TagsWrite);
@@ -99,7 +99,7 @@ public class DeviceTagsController : ControllerBase
     var tag = device.Tags.Find(x => x.Id == tagId);
     if (tag is null)
     {
-      return NotFound("Tag not found on device.");
+      return Problem(statusCode: StatusCodes.Status404NotFound, title: V1ProblemTitles.NotFound);
     }
 
     device.Tags.Remove(tag);

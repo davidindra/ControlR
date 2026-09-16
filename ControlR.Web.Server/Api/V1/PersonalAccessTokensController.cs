@@ -38,12 +38,18 @@ public class PersonalAccessTokensController : ControllerBase
     var user = await userManager.GetUserAsync(User);
     if (user is null || user.TenantId == Guid.Empty)
     {
-      return BadRequest("User tenant not found");
+      return Problem(
+        detail: "User tenant not found",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await personalAccessTokenManager.CreateToken(
@@ -61,7 +67,10 @@ public class PersonalAccessTokensController : ControllerBase
 
     if (!result.IsSuccess)
     {
-      return BadRequest(result.Reason);
+      return Problem(
+        detail: result.Reason,
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var response = new CreatePersonalAccessTokenResponseDto(
@@ -94,13 +103,19 @@ public class PersonalAccessTokensController : ControllerBase
     var user = await userManager.GetUserAsync(User);
     if (user is null)
     {
-      return BadRequest("User not found.");
+      return Problem(
+        detail: "User not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await personalAccessTokenManager.Delete(id, user.Id);
     if (!result.IsSuccess)
     {
-      return BadRequest(result.Reason);
+      return Problem(
+        detail: result.Reason,
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     return NoContent();
@@ -125,7 +140,10 @@ public class PersonalAccessTokensController : ControllerBase
     var user = await userManager.GetUserAsync(User);
     if (user is null)
     {
-      return BadRequest("User not found.");
+      return Problem(
+        detail: "User not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var tokens = await personalAccessTokenManager.GetForUser(user.Id);
@@ -156,7 +174,10 @@ public class PersonalAccessTokensController : ControllerBase
     var user = await userManager.GetUserAsync(User);
     if (user is null)
     {
-      return BadRequest("User not found.");
+      return Problem(
+        detail: "User not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await personalAccessTokenManager.Update(
@@ -166,7 +187,10 @@ public class PersonalAccessTokensController : ControllerBase
 
     if (!result.IsSuccess)
     {
-      return BadRequest(result.Reason);
+      return Problem(
+        detail: result.Reason,
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     return Ok(ToV1ResponseDto(result.Value));

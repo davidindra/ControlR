@@ -41,7 +41,10 @@ public class AuthorizationChangeLogsController(
     var principal = User.ToPrincipalDescriptor();
     if (principal is null)
     {
-      return BadRequest("User principal not found.");
+      return Problem(
+        detail: "User principal not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var serverResource = new ResourceDescriptor(PermissionScopeKind.Server);
@@ -120,7 +123,10 @@ public class AuthorizationChangeLogsController(
     var principal = User.ToPrincipalDescriptor();
     if (principal is null)
     {
-      return BadRequest("User principal not found.");
+      return Problem(
+        detail: "User principal not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     // The gate is the permission, not the principal kind. ServerScope grants this to server

@@ -42,7 +42,10 @@ public class DeviceGroupsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var authorizationResult = await authorizationService.AuthorizeAsync(
@@ -83,7 +86,10 @@ public class DeviceGroupsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _deviceGroupManager.Create(
@@ -118,7 +124,10 @@ public class DeviceGroupsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _deviceGroupManager.Delete(deviceGroupId, resolvedTenantId, actor, cancellationToken);
@@ -197,7 +206,10 @@ public class DeviceGroupsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var authorizationResult = await authorizationService.AuthorizeAsync(
@@ -240,7 +252,10 @@ public class DeviceGroupsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _deviceGroupManager.Update(

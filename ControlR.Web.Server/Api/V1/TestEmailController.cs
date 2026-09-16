@@ -25,12 +25,18 @@ public class TestEmailController : ControllerBase
   {
     if (appOptions.CurrentValue.DisableEmailSending)
     {
-      return BadRequest("Email sending is disabled in application settings.");
+      return Problem(
+        detail: "Email sending is disabled in application settings.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     if (!User.TryGetUserId(out var userId))
     {
-      return BadRequest("User ID not found");
+      return Problem(
+        detail: "User ID not found",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var user = await appDb
@@ -41,7 +47,10 @@ public class TestEmailController : ControllerBase
 
     if (user?.Email is null)
     {
-      return BadRequest("User email not found");
+      return Problem(
+        detail: "User email not found",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await emailSender.SendEmailWithResult(
@@ -55,6 +64,9 @@ public class TestEmailController : ControllerBase
       return Ok();
     }
 
-    return Problem(result.Reason);
+    return Problem(
+      detail: result.Reason,
+      statusCode: StatusCodes.Status400BadRequest,
+      title: V1ProblemTitles.InvalidRequest);
   }
 }

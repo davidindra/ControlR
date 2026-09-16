@@ -415,7 +415,7 @@ public class DeviceFileSystemController(
     return Problem(
       detail: detail,
       statusCode: StatusCodes.Status400BadRequest,
-      title: "Invalid request.");
+      title: V1ProblemTitles.InvalidRequest);
   }
 
   /// <summary>
@@ -444,7 +444,7 @@ public class DeviceFileSystemController(
     {
       FileSystemFailure.DeviceNotFound => Problem(
         statusCode: StatusCodes.Status404NotFound,
-        title: "Not found."),
+        title: V1ProblemTitles.NotFound),
       FileSystemFailure.Forbidden => Forbid(),
       FileSystemFailure.DeviceOffline => Problem(
         detail: DeviceOfflineMessage,

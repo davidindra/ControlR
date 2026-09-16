@@ -41,7 +41,10 @@ public class CustomersController(ICustomerManager customerManager) : ControllerB
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _customerManager.AssignDevices(
@@ -74,7 +77,10 @@ public class CustomersController(ICustomerManager customerManager) : ControllerB
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _customerManager.Create(
@@ -109,7 +115,10 @@ public class CustomersController(ICustomerManager customerManager) : ControllerB
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _customerManager.Delete(customerId, resolvedTenantId, actor, cancellationToken);
@@ -189,7 +198,10 @@ public class CustomersController(ICustomerManager customerManager) : ControllerB
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _customerManager.Update(

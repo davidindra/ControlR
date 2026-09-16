@@ -42,12 +42,18 @@ public class EffectivePermissionsController(
                               PermissionPrincipalKind.UserGroup or
                               PermissionPrincipalKind.ServiceAccount))
     {
-      return BadRequest("Unsupported principal kind.");
+      return Problem(
+        detail: "Unsupported principal kind.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     if (string.IsNullOrWhiteSpace(permissionName) || permissionName.Length > 150)
     {
-      return BadRequest("Permission name is required and must be 150 characters or fewer.");
+      return Problem(
+        detail: "Permission name is required and must be 150 characters or fewer.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     // ServiceAccounts has no claims-driven query filter, so this predicate is the only tenant

@@ -3,6 +3,7 @@ using ControlR.Web.Server.Data.Entities;
 using ControlR.Web.Server.Services;
 using ControlR.Web.Server.Tests.Helpers;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using ControlR.Libraries.Api.Contracts.Dtos.ServerApi.V1.PersonalAccessTokens;
@@ -123,7 +124,11 @@ public class PersonalAccessTokensV1ControllerTests(ITestOutputHelper testOutput)
       created.Value.Id,
       tenant.Id);
 
-    Assert.IsType<BadRequestObjectResult>(result);
+    ProblemDetailsAsserts.AssertProblem(
+      result,
+      StatusCodes.Status400BadRequest,
+      "Invalid request.",
+      "Personal access token not found.");
   }
 
   [Fact]
@@ -142,7 +147,11 @@ public class PersonalAccessTokensV1ControllerTests(ITestOutputHelper testOutput)
       Guid.NewGuid(),
       tenant.Id);
 
-    Assert.IsType<BadRequestObjectResult>(result);
+    ProblemDetailsAsserts.AssertProblem(
+      result,
+      StatusCodes.Status400BadRequest,
+      "Invalid request.",
+      "Personal access token not found.");
   }
 
   [Fact]

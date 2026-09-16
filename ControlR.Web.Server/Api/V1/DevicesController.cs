@@ -61,7 +61,10 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
   {
     if (requestDto.DeviceIds.Count > DtoLimits.DeviceIdsMaxCount)
     {
-      return BadRequest($"Too many device IDs. Maximum allowed is {DtoLimits.DeviceIdsMaxCount}.");
+      return Problem(
+        detail: $"Too many device IDs. Maximum allowed is {DtoLimits.DeviceIdsMaxCount}.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var candidateDevices = await appDb.Devices
@@ -178,7 +181,10 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
 
     if (!device.IsOnline || string.IsNullOrWhiteSpace(device.ConnectionId))
     {
-      return Conflict("Device is currently offline.");
+      return Problem(
+        detail: "Device is currently offline.",
+        statusCode: StatusCodes.Status409Conflict,
+        title: V1ProblemTitles.Conflict);
     }
 
     try
@@ -334,12 +340,18 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
   {
     if (deviceId != requestDto.DeviceId)
     {
-      return BadRequest("Device ID mismatch.");
+      return Problem(
+        detail: "Device ID mismatch.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     if (requestDto.Alias is not null && requestDto.Alias.Length > 100)
     {
-      return BadRequest("Alias must be 100 characters or fewer.");
+      return Problem(
+        detail: "Alias must be 100 characters or fewer.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var device = await appDb.Devices.FirstOrDefaultAsync(x => x.Id == deviceId, cancellationToken);

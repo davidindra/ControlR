@@ -24,7 +24,10 @@ public class LogonTokensController : ControllerBase
     var device = await appDb.Devices.FindAsync(request.DeviceId);
     if (device is null || device.TenantId != request.TenantId)
     {
-      return BadRequest("Device not found");
+      return Problem(
+        detail: "Device not found",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     // Redundant while the device is loaded through the filtered AppDb, since a tenant-bound
@@ -32,7 +35,10 @@ public class LogonTokensController : ControllerBase
     if (!User.IsServerPrincipal() &&
       (!User.TryGetTenantId(out var callerTenantId) || callerTenantId != device.TenantId))
     {
-      return BadRequest("Device not found");
+      return Problem(
+        detail: "Device not found",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var authResult = await authorizationService.AuthorizeAsync(User, device, DeviceResourcePolicies.LogonTokenCreate);
@@ -44,7 +50,10 @@ public class LogonTokensController : ControllerBase
     var creator = User.ToPrincipalDescriptor();
     if (creator is null)
     {
-      return BadRequest("Caller principal not found.");
+      return Problem(
+        detail: "Caller principal not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await logonTokenScopeService.CreateTokenWithScopes(
@@ -72,7 +81,10 @@ public class LogonTokensController : ControllerBase
     var device = await appDb.Devices.FindAsync(request.DeviceId);
     if (device is null || device.TenantId != request.TenantId)
     {
-      return BadRequest("Device not found");
+      return Problem(
+        detail: "Device not found",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     // Redundant while the device is loaded through the filtered AppDb, since a tenant-bound
@@ -80,7 +92,10 @@ public class LogonTokensController : ControllerBase
     if (!User.IsServerPrincipal() &&
       (!User.TryGetTenantId(out var callerTenantId) || callerTenantId != device.TenantId))
     {
-      return BadRequest("Device not found");
+      return Problem(
+        detail: "Device not found",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var authResult = await authorizationService.AuthorizeAsync(User, device, DeviceResourcePolicies.LogonTokenCreate);
@@ -92,7 +107,10 @@ public class LogonTokensController : ControllerBase
     var creator = User.ToPrincipalDescriptor();
     if (creator is null)
     {
-      return BadRequest("Caller principal not found.");
+      return Problem(
+        detail: "Caller principal not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await logonTokenScopeService.CreateTokenWithScopes(
