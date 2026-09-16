@@ -42,7 +42,7 @@
 - The `ControlR.ApiClient` interactive session no longer keeps reporting itself as signed in after the server rejects its refresh token during an ordinary API call.
 - Disposing a `ControlR.ApiClient` interactive auth session now moves it to a new terminal `Disposed` state and raises `StateChanged`.
 - Interactive sign-in in `ControlR.ApiClient` now clears a personal access token or service account key if one was already configured on the session.
-- The dashboard's file operations no longer report success when the agent refused them. A refused create/delete now surfaces the agent's own explanation as an error (the internal `/api/*` file-system routes answer `409` with the agent's text, or `502` when the device never answered, instead of `200`/`204` or a bare `400`/`500`).
+- The dashboard's file operations no longer report success when the agent reports a failure.
 
 ## Removals
 
@@ -55,6 +55,4 @@ None.
   handle. The UI already uses V1 for both, so nothing in the product calls these anymore.
 - The value-carrying MVC error shortcuts (`BadRequest(value)`, `NotFound(value)`, `Conflict(value)`,
   `Unauthorized(value)`, `StatusCode(code, value)`) are banned under `Api/V1` by RS0030, so a new V1
-  endpoint cannot reintroduce a bare-string error body. Two guardrail tests hold the rest:
-  `V1ProblemDetailsContractTests` reads the shipped OpenAPI document, and
-  `V1ProblemDetailsMiddlewareTests` drives the pipeline over HTTP.
+  endpoint cannot reintroduce a bare-string error body. Use `Problem()` instead.
