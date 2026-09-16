@@ -64,9 +64,33 @@ else
   app.UseHsts();
 }
 
+// Errors that never reach a controller - no matching route, no credentials, a rejected rate limit -
+// leave the pipeline with a status code and no body, so something has to say what the status means.
+// The parameterless UseStatusCodePages() already writes an RFC 9457 document on this SDK because
+// AddControlrServer registers IProblemDetailsService, but that is a framework default rather than a
+// decision made here, and it has changed before. The handler is spelled out so /api answers with one
+// ProblemDetails shape wherever the status came from, and so V1ProblemDetailsMiddlewareTests fails
+// here rather than silently shipping text/plain if the default ever moves again.
+//
+// The caveat worth knowing: an MVC ForbidResult from cookie authentication never produces a body of
+// its own - AuthorizationRegistrationExtensions sets 401/403 on /api and stops there - so these
+// middleware-written documents are the whole answer a cookie caller gets for 401 and 403. A caller
+// that expects the body to say why is out of luck; the status code is the message.
 app.UseWhen(
   ctx => ctx.Request.Path.StartsWithSegments("/api"),
-  apiApp => apiApp.UseStatusCodePages());
+  apiApp => apiApp.UseStatusCodePages(new StatusCodePagesOptions
+  {
+    HandleAsync = async context =>
+    {
+      var problemDetailsService = context.HttpContext.RequestServices
+        .GetRequiredService<IProblemDetailsService>();
+
+      await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+      {
+        HttpContext = context.HttpContext
+      });
+    }
+  }));
 
 app.MapStaticAssets();
 app.UseStaticFiles();
