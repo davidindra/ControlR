@@ -38,8 +38,10 @@ internal static class HttpExtensions
       return bestMessage;
     }
 
-    // Not a ProblemDetails response (e.g. controller BadRequest("string")).
-    // Use raw content as the error message, unescaping JSON string quotes if present.
+    // Not a ProblemDetails response, so use the raw content as the error message, unescaping JSON
+    // string quotes if present. No /api/v1 endpoint produces this any more - every V1 failure ships a
+    // ProblemDetails body - but the deprecated /api/* endpoints this client still calls do answer some
+    // failures with a bare JSON string, which is what this path unwraps.
     var trimmed = rawContent.Trim();
     if (trimmed.Length > 2 && trimmed[0] == '"' && trimmed[^1] == '"')
     {
@@ -75,7 +77,10 @@ internal static class HttpExtensions
       }
       catch
       {
-        // Not a ProblemDetails response -- EnrichErrorMessage will use raw content.
+        // The body is not a JSON object - an HTML error page, a plain-text status page, or one of
+        // the bare JSON strings the deprecated /api/* endpoints return for some failures. A
+        // /api/v1 failure is always a ProblemDetails object and lands in the try. Either way,
+        // EnrichErrorMessage makes something readable out of the raw content.
       }
 
       var enrichedMessage = EnrichErrorMessage(rawContent, problemDetails);

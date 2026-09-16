@@ -4,6 +4,22 @@
   - A pre-existing auth cookie will lack the new permission claims.
 - Some of the routes and DTOs used in the `/api/v1/*` endpoints have been changed.
   - There should be no more breaking changes to the `/api/v1/*` endpoints after this release.
+- Every `/api/v1/*` failure now answers with an RFC 9457 `application/problem+json` body.
+  - The message an endpoint used to return as a bare JSON string is preserved verbatim as the problem
+    document's `detail`, and the status code is unchanged, so a caller that only reads the status is
+    unaffected. A caller that read the body as a string has to read `detail` now.
+  - Titles say the kind of failure and repeat from request to request (`Invalid request.`, `Conflict.`,
+    `Not found.`); the `detail` carries what varies. Rejected values are listed in the `errors` extension
+    instead of being joined into the text.
+  - Device file system operations now distinguish two failures that used to share one name: the device
+    answered and the operation failed on the device answers `409` with the agent's own explanation, and
+    the device never answered at all answers `502`. Before this, a device that never answered could come
+    back as `400`, as `500`, or even as a success, depending on the operation.
+  - Errors raised before a controller runs - an unknown `/api/v1` route, a request with no credentials, a
+    rejected rate limit - carry the same body instead of an empty one.
+  - `/api/v1/device-tags` no longer says which half of a device/tag pair it could not find. Both cases
+    answer the same bare `404`, so the endpoint cannot be used to confirm that another tenant's device
+    exists.
 - Although roles were migrated to permission presets, user tags that mapped users to devices were removed.
   - If you were using user tags to control access to devices, you will need to migrate to the new permissions system.
 
@@ -51,3 +67,8 @@ None.
 - `ControlR.ApiClient` now marks the internal installer-key and user logon-token methods
   `[Obsolete]`, each pointing at its `/api/v1` replacement and the difference the caller has to
   handle. The UI already uses V1 for both, so nothing in the product calls these anymore.
+- The value-carrying MVC error shortcuts (`BadRequest(value)`, `NotFound(value)`, `Conflict(value)`,
+  `Unauthorized(value)`, `StatusCode(code, value)`) are banned under `Api/V1` by RS0030, so a new V1
+  endpoint cannot reintroduce a bare-string error body. Two guardrail tests hold the rest:
+  `V1ProblemDetailsContractTests` reads the shipped OpenAPI document, and
+  `V1ProblemDetailsMiddlewareTests` drives the pipeline over HTTP.
