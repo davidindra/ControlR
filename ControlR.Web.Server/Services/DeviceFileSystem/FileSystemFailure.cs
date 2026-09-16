@@ -32,10 +32,16 @@ public enum FileSystemFailure
   Cancelled,
 
   /// <summary>
-  /// The agent answered, and the answer was a rejection. <see cref="FileSystemOutcome{TValue}.Reason" />
-  /// holds the agent's own explanation, or is null when the agent returned nothing at all.
+  /// The agent answered, and the operation failed on the device. <see cref="FileSystemOutcome.Reason" />
+  /// holds the agent's own explanation.
   /// </summary>
-  HubRejected,
+  RemoteFailure,
+
+  /// <summary>
+  /// The agent never answered, so there is nothing to report about the operation itself.
+  /// <see cref="FileSystemOutcome.Reason" /> is null.
+  /// </summary>
+  NoResponse,
 
   /// <summary>
   /// The dispatch threw something other than cancellation.

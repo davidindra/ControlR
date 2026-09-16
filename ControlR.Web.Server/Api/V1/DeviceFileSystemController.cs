@@ -421,15 +421,15 @@ public class DeviceFileSystemController(
   /// <summary>
   /// The one place the eight operations translate an outcome's condition into a status.
   /// </summary>
-  private IActionResult MapFailure<TValue>(
-    FileSystemOutcome<TValue> outcome,
+  private IActionResult MapFailure(
+    FileSystemOutcome outcome,
     string unexpectedFailureDetail)
   {
     if (outcome.Failure is FileSystemFailure.None)
     {
-      // Reported success but carried no payload, which no operation produces today. Reaching here is a
-      // bug in this server rather than a device fault, so the title says unexpected response and does
-      // not claim the device could not be contacted.
+      // Reported success but carried no payload, which none of the payload-carrying operations do.
+      // Reaching here is a bug in this server rather than a device fault, so the title says
+      // unexpected response and does not claim the device could not be contacted.
       _logger.LogError(
         "A device file system operation reported success without a payload ({Outcome}).",
         outcome);
@@ -442,21 +442,26 @@ public class DeviceFileSystemController(
 
     return outcome.Failure switch
     {
-      FileSystemFailure.DeviceNotFound => NotFound(),
+      FileSystemFailure.DeviceNotFound => Problem(
+        statusCode: StatusCodes.Status404NotFound,
+        title: "Not found."),
       FileSystemFailure.Forbidden => Forbid(),
       FileSystemFailure.DeviceOffline => Problem(
         detail: DeviceOfflineMessage,
         statusCode: StatusCodes.Status409Conflict,
         title: "The device is not currently online."),
-      FileSystemFailure.HubRejected when outcome.Reason is { Length: > 0 } reason => Problem(
-        detail: reason,
+      FileSystemFailure.RemoteFailure => Problem(
+        detail: outcome.Reason,
         statusCode: StatusCodes.Status409Conflict,
         title: "The remote device could not complete the operation."),
-      FileSystemFailure.HubRejected => Problem(
+      FileSystemFailure.NoResponse => Problem(
         detail: "The device did not return a result.",
         statusCode: StatusCodes.Status502BadGateway,
         title: "No response from the remote device."),
-      FileSystemFailure.Cancelled => StatusCode(StatusCodes.Status408RequestTimeout),
+      FileSystemFailure.Cancelled => Problem(
+        detail: "The wait for the remote device was canceled.",
+        statusCode: StatusCodes.Status408RequestTimeout,
+        title: "Request timed out."),
       FileSystemFailure.Unexpected => Problem(
         detail: unexpectedFailureDetail,
         statusCode: StatusCodes.Status500InternalServerError,

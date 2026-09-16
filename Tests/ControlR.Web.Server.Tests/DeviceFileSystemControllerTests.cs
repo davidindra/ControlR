@@ -18,9 +18,9 @@ using Moq;
 namespace ControlR.Web.Server.Tests;
 
 /// <summary>
-/// Characterization tests for <see cref="DeviceFileSystemController"/>. These pin the behavior that
-/// exists today, including inconsistencies between sibling actions, so a later service extraction can
-/// be verified against the current contract. The four binary siblings (download, download-archive,
+/// Pins what each <see cref="DeviceFileSystemController"/> action answers for each outcome, including
+/// the inconsistencies between sibling actions that are deliberate legacy (a missing device is a 400 on
+/// path segments and a 404 everywhere else). The four binary siblings (download, download-archive,
 /// logs/{deviceId}/contents, upload) stream to <c>Response.Body</c> or take multipart bodies and are
 /// intentionally out of scope.
 /// <para>
@@ -114,11 +114,11 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
   }
 
   [Fact]
-  public async Task CreateDirectory_WhenHubCallReturnsFailure_StillReturnsNoContent()
+  public async Task CreateDirectory_WhenHubCallReturnsFailure_ReturnsConflictWithTheAgentsReason()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.CreateScope();
-    var harness = await Harness.CreateAsync(scope, "dfs-create-discarded-failure@test.local");
+    var harness = await Harness.CreateAsync(scope, "dfs-create-agent-failure@test.local");
     harness.AgentClient
       .Setup(x => x.CreateDirectory(It.IsAny<CreateDirectoryHubDto>()))
       .ReturnsAsync(HubResult.Fail("the agent refused"));
@@ -129,7 +129,27 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
       harness.DeviceFileSystem,
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NoContentResult>(result);
+    AssertRemoteFailure(result, "the agent refused");
+  }
+
+  [Fact]
+  public async Task CreateDirectory_WhenHubCallReturnsNull_ReturnsBadGateway()
+  {
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    using var scope = testApp.CreateScope();
+    var harness = await Harness.CreateAsync(scope, "dfs-create-no-answer@test.local");
+    HubResult? noResponse = null;
+    harness.AgentClient
+      .Setup(x => x.CreateDirectory(It.IsAny<CreateDirectoryHubDto>()))
+      .ReturnsAsync(noResponse!);
+
+    var result = await harness.Controller.CreateDirectory(
+      harness.Device.Id,
+      new InternalDtos.CreateDirectoryRequestDto(harness.Device.Id, "/parent", "new-dir"),
+      harness.DeviceFileSystem,
+      TestContext.Current.CancellationToken);
+
+    AssertNoResponse(result);
   }
 
   [Fact]
@@ -299,11 +319,11 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
   }
 
   [Fact]
-  public async Task DeletePath_WhenHubCallReturnsFailure_StillReturnsOk()
+  public async Task DeletePath_WhenHubCallReturnsFailure_ReturnsConflictWithTheAgentsReason()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.CreateScope();
-    var harness = await Harness.CreateAsync(scope, "dfs-delete-discarded-failure@test.local");
+    var harness = await Harness.CreateAsync(scope, "dfs-delete-agent-failure@test.local");
     harness.AgentClient
       .Setup(x => x.DeleteFile(It.IsAny<FileDeleteHubDto>()))
       .ReturnsAsync(HubResult.Fail("the agent refused"));
@@ -314,10 +334,27 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
       harness.DeviceFileSystem,
       TestContext.Current.CancellationToken);
 
-    var ok = Assert.IsType<OkObjectResult>(result);
-    var payload = ok.Value;
-    Assert.NotNull(payload);
-    Assert.Equal("File deletion completed", payload.GetType().GetProperty("Message")?.GetValue(payload));
+    AssertRemoteFailure(result, "the agent refused");
+  }
+
+  [Fact]
+  public async Task DeletePath_WhenHubCallReturnsNull_ReturnsBadGateway()
+  {
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    using var scope = testApp.CreateScope();
+    var harness = await Harness.CreateAsync(scope, "dfs-delete-no-answer@test.local");
+    HubResult? noResponse = null;
+    harness.AgentClient
+      .Setup(x => x.DeleteFile(It.IsAny<FileDeleteHubDto>()))
+      .ReturnsAsync(noResponse!);
+
+    var result = await harness.Controller.DeletePath(
+      harness.Device.Id,
+      new InternalDtos.FileDeleteRequestDto(harness.Device.Id, "/parent/file.txt", false),
+      harness.DeviceFileSystem,
+      TestContext.Current.CancellationToken);
+
+    AssertNoResponse(result);
   }
 
   [Fact]
@@ -467,7 +504,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
   }
 
   [Fact]
-  public async Task GetDirectoryContents_WhenStreamRequestFails_ReturnsBadRequestWithReason()
+  public async Task GetDirectoryContents_WhenStreamRequestFails_ReturnsConflictWithTheAgentsReason()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.CreateScope();
@@ -478,12 +515,11 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await GetDirectoryContentsAsync(harness, harness.Device.Id, "/parent");
 
-    var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-    Assert.Equal("agent could not read the directory", badRequest.Value);
+    AssertRemoteFailure(result, "agent could not read the directory");
   }
 
   [Fact]
-  public async Task GetDirectoryContents_WhenStreamRequestReturnsNull_Returns500WithStringBody()
+  public async Task GetDirectoryContents_WhenStreamRequestReturnsNull_ReturnsBadGateway()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.CreateScope();
@@ -495,9 +531,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await GetDirectoryContentsAsync(harness, harness.Device.Id, "/parent");
 
-    var objectResult = Assert.IsType<ObjectResult>(result);
-    Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
-    Assert.Equal("An error occurred while retrieving directory contents.", objectResult.Value);
+    AssertNoResponse(result);
   }
 
   [Fact]
@@ -641,7 +675,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
   }
 
   [Fact]
-  public async Task GetLogFiles_WhenHubCallFails_ReturnsProblemDetails()
+  public async Task GetLogFiles_WhenHubCallFails_ReturnsConflictWithTheAgentsReason()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.CreateScope();
@@ -652,13 +686,23 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await GetLogFilesAsync(harness, harness.Device.Id);
 
-    var objectResult = Assert.IsType<ObjectResult>(result);
-    Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
-    var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
-    Assert.Equal(StatusCodes.Status500InternalServerError, problem.Status);
-    Assert.Equal("A failure occurred on the remote device.", problem.Title);
-    Assert.Equal("agent log scan failed", problem.Detail);
-    Assert.Null(problem.Instance);
+    AssertRemoteFailure(result, "agent log scan failed");
+  }
+
+  [Fact]
+  public async Task GetLogFiles_WhenHubCallReturnsNull_ReturnsBadGateway()
+  {
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    using var scope = testApp.CreateScope();
+    var harness = await Harness.CreateAsync(scope, "dfs-logs-no-answer@test.local");
+    HubResult<InternalDtos.GetLogFilesResponseDto>? noResponse = null;
+    harness.AgentClient
+      .Setup(x => x.GetLogFiles())
+      .ReturnsAsync(noResponse!);
+
+    var result = await GetLogFilesAsync(harness, harness.Device.Id);
+
+    AssertNoResponse(result);
   }
 
   [Fact]
@@ -745,7 +789,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
   }
 
   [Fact]
-  public async Task GetPathSegments_WhenHubCallReturnsNull_Returns500WithNoResponseMessage()
+  public async Task GetPathSegments_WhenHubCallReturnsNull_ReturnsBadGateway()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.CreateScope();
@@ -757,9 +801,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await GetPathSegmentsAsync(harness, harness.Device.Id, "/parent");
 
-    var objectResult = Assert.IsType<ObjectResult>(result);
-    Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
-    Assert.Equal("No response received from device agent.", objectResult.Value);
+    AssertNoResponse(result);
   }
 
   [Fact]
@@ -869,7 +911,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
   }
 
   [Fact]
-  public async Task GetRootDrives_WhenHubCallFails_ReturnsBadRequestWithReason()
+  public async Task GetRootDrives_WhenHubCallFails_ReturnsConflictWithTheAgentsReason()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.CreateScope();
@@ -880,12 +922,11 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await GetRootDrivesAsync(harness, harness.Device.Id);
 
-    var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-    Assert.Equal("no roots enumerated", badRequest.Value);
+    AssertRemoteFailure(result, "no roots enumerated");
   }
 
   [Fact]
-  public async Task GetRootDrives_WhenHubCallReturnsNull_Returns500WithStringBody()
+  public async Task GetRootDrives_WhenHubCallReturnsNull_ReturnsBadGateway()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.CreateScope();
@@ -897,9 +938,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await GetRootDrivesAsync(harness, harness.Device.Id);
 
-    var objectResult = Assert.IsType<ObjectResult>(result);
-    Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
-    Assert.Equal("An error occurred while retrieving root drives.", objectResult.Value);
+    AssertNoResponse(result);
   }
 
   [Fact]
@@ -982,7 +1021,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
   }
 
   [Fact]
-  public async Task GetSubdirectories_WhenStreamRequestFails_ReturnsBadRequestWithReason()
+  public async Task GetSubdirectories_WhenStreamRequestFails_ReturnsConflictWithTheAgentsReason()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.CreateScope();
@@ -993,8 +1032,23 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await GetSubdirectoriesAsync(harness, harness.Device.Id, "/parent");
 
-    var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-    Assert.Equal("agent could not enumerate subdirectories", badRequest.Value);
+    AssertRemoteFailure(result, "agent could not enumerate subdirectories");
+  }
+
+  [Fact]
+  public async Task GetSubdirectories_WhenStreamRequestReturnsNull_ReturnsBadGateway()
+  {
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    using var scope = testApp.CreateScope();
+    var harness = await Harness.CreateAsync(scope, "dfs-subdirs-null@test.local");
+    HubResult? noResponse = null;
+    harness.AgentClient
+      .Setup(x => x.StreamSubdirectories(It.IsAny<SubdirectoriesStreamRequestHubDto>()))
+      .ReturnsAsync(noResponse!);
+
+    var result = await GetSubdirectoriesAsync(harness, harness.Device.Id, "/parent");
+
+    AssertNoResponse(result);
   }
 
   [Fact]
@@ -1193,12 +1247,11 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
   }
 
   /// <remarks>
-  /// The service reports a reasonless rejection when the agent never answered, which this endpoint's
-  /// switch folds into its 500 arm, so the shipped 500 is preserved. The 500 is the contract being
-  /// pinned. The versioned surface answers the same condition with a 502 instead.
+  /// The agent never answered, so there is no verdict to report and this is a bad gateway rather than
+  /// the 500 this endpoint used to answer.
   /// </remarks>
   [Fact]
-  public async Task ValidateFilePath_WhenHubCallReturnsNull_Returns500WithStringBody()
+  public async Task ValidateFilePath_WhenHubCallReturnsNull_ReturnsBadGateway()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.CreateScope();
@@ -1212,9 +1265,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
       harness,
       new InternalDtos.ValidateFilePathRequestDto(harness.Device.Id, "/parent", "file.txt"));
 
-    var objectResult = Assert.IsType<ObjectResult>(result);
-    Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
-    Assert.Equal("An error occurred while validating the file path.", objectResult.Value);
+    AssertNoResponse(result);
   }
 
   [Fact]
@@ -1234,6 +1285,33 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
     var objectResult = Assert.IsType<ObjectResult>(result);
     Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
     Assert.Equal("An error occurred while validating the file path.", objectResult.Value);
+  }
+
+  /// <summary>
+  /// The agent never answered, so there is no verdict to carry and the answer is a bad gateway.
+  /// </summary>
+  private static void AssertNoResponse(IActionResult result)
+  {
+    var objectResult = Assert.IsType<ObjectResult>(result);
+    Assert.Equal(StatusCodes.Status502BadGateway, objectResult.StatusCode);
+    var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
+    Assert.Equal(StatusCodes.Status502BadGateway, problem.Status);
+    Assert.Equal("No response from the remote device.", problem.Title);
+    Assert.Equal("No response received from device agent.", problem.Detail);
+  }
+
+  /// <summary>
+  /// The agent answered and the operation failed on the device, so the answer is a conflict carrying
+  /// the agent's own text.
+  /// </summary>
+  private static void AssertRemoteFailure(IActionResult result, string expectedReason)
+  {
+    var objectResult = Assert.IsType<ObjectResult>(result);
+    Assert.Equal(StatusCodes.Status409Conflict, objectResult.StatusCode);
+    var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
+    Assert.Equal(StatusCodes.Status409Conflict, problem.Status);
+    Assert.Equal("The remote device could not complete the operation.", problem.Title);
+    Assert.Equal(expectedReason, problem.Detail);
   }
 
   private static InternalDtos.FileSystemEntryDto CreateEntry(string name, bool isDirectory = false) =>
