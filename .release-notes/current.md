@@ -16,7 +16,9 @@
     the device never answered at all answers `502`. Before this, a device that never answered could come
     back as `400`, as `500`, or even as a success, depending on the operation.
   - Errors raised before a controller runs - an unknown `/api/v1` route, a request with no credentials, a
-    rejected rate limit - carry the same body instead of an empty one.
+    rejected rate limit - carry the same body too. On this SDK the first two already answered
+    `problem+json` at runtime while the OpenAPI documents described them as `text/plain`; that behavior is
+    now an explicit, tested contract instead of an inherited default, and the documents describe it.
   - `/api/v1/device-tags` no longer says which half of a device/tag pair it could not find. Both cases
     answer the same bare `404`, so the endpoint cannot be used to confirm that another tenant's device
     exists.
@@ -57,6 +59,7 @@
 - The `ControlR.ApiClient` interactive session no longer keeps reporting itself as signed in after the server rejects its refresh token during an ordinary API call.
 - Disposing a `ControlR.ApiClient` interactive auth session now moves it to a new terminal `Disposed` state and raises `StateChanged`.
 - Interactive sign-in in `ControlR.ApiClient` now clears a personal access token or service account key if one was already configured on the session.
+- The dashboard's file operations no longer report success when the agent refused them. A refused create/delete now surfaces the agent's own explanation as an error (the internal `/api/*` file-system routes answer `409` with the agent's text, or `502` when the device never answered, instead of `200`/`204` or a bare `400`/`500`).
 
 ## Removals
 
