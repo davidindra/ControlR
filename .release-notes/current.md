@@ -2,9 +2,9 @@
 
 - ⚠️ You will need to log out and back in if you have "Remember Me" enabled. ⚠️
   - A pre-existing auth cookie will lack the new permission claims.
+- Failures from `/api/v1/*` endpoints now answer with an RFC 9457 `application/problem+json` body.
 - Some of the routes and DTOs used in the `/api/v1/*` endpoints have been changed.
   - There should be no more breaking changes to the `/api/v1/*` endpoints after this release.
-- Every `/api/v1/*` failure now answers with an RFC 9457 `application/problem+json` body.
 - Although roles were migrated to permission presets, user tags that mapped users to devices were removed.
   - If you were using user tags to control access to devices, you will need to migrate to the new permissions system.
 
