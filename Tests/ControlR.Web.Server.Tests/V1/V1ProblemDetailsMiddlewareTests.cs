@@ -42,6 +42,26 @@ public class V1ProblemDetailsMiddlewareTests(ITestOutputHelper testOutput)
     await AssertProblemBodyAsync(response, StatusCodes.Status404NotFound);
   }
 
+  [Fact]
+  public async Task UnmatchedV1Route_WhenAcceptRejectsJson_ReturnsPlainTextFallback()
+  {
+    using var testServer = await TestWebServerBuilder.CreateTestServer(testOutput);
+    using var httpClient = await testServer.GetHttpClient();
+
+    using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/no-such-route");
+    request.Headers.Accept.ParseAdd("text/html");
+
+    var response = await httpClient.SendAsync(request, TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    Assert.Equal("text/plain", response.Content.Headers.ContentType?.MediaType);
+
+    var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+    testOutput.WriteLine($"Fallback body: {body}");
+
+    Assert.Contains("404", body, StringComparison.Ordinal);
+  }
+
   /// <summary>
   /// Asserts the response is a problem+json document whose own status agrees with the status line.
   /// </summary>
