@@ -17,8 +17,6 @@ public class DeviceFileSystemController(
   IDeviceFileSystemService deviceFileSystem,
   ILogger<DeviceFileSystemController> logger) : ControllerBase
 {
-  private const string DeviceOfflineMessage = "Device is not currently online.";
-
   private readonly IDeviceFileSystemService _deviceFileSystem = deviceFileSystem;
 
   private readonly ILogger<DeviceFileSystemController> _logger = logger;
@@ -447,9 +445,9 @@ public class DeviceFileSystemController(
         title: V1ProblemTitles.NotFound),
       FileSystemFailure.Forbidden => Forbid(),
       FileSystemFailure.DeviceOffline => Problem(
-        detail: DeviceOfflineMessage,
+        detail: "Device is currently offline.",
         statusCode: StatusCodes.Status409Conflict,
-        title: "The device is not currently online."),
+        title: V1ProblemTitles.Conflict),
       FileSystemFailure.RemoteFailure => Problem(
         detail: outcome.Reason,
         statusCode: StatusCodes.Status409Conflict,

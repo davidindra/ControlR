@@ -20,6 +20,7 @@ public class ServerStatsController(IServerStatsProvider serverStatsProvider) : C
   [ProducesResponseType<ServerStatsDto>(StatusCodes.Status200OK)]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
   public async Task<ActionResult<ServerStatsDto>> GetServerStats()
   {
     var result = await _serverStatsProvider.GetServerStats();

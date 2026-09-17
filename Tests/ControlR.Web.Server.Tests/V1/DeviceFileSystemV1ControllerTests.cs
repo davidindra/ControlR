@@ -114,7 +114,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
 
       var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(
         TestContext.Current.CancellationToken);
-      Assert.Equal("Invalid tenant id.", problem?.Title);
+      Assert.Equal("Invalid tenant ID.", problem?.Title);
     }
   }
 

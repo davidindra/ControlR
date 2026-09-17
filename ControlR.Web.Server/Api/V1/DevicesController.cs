@@ -148,8 +148,11 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
 
   [HttpGet("{deviceId:guid}/desktop-sessions")]
   [ProducesResponseType<V1Dtos.DesktopSessionsResponseDto>(StatusCodes.Status200OK)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
   public async Task<ActionResult<V1Dtos.DesktopSessionsResponseDto>> GetDesktopSessions(
     [FromRoute] Guid deviceId,
     [FromServices] AppDb appDb,

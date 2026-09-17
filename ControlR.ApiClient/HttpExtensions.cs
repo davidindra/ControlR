@@ -39,7 +39,7 @@ internal static class HttpExtensions
     }
 
     // Not a ProblemDetails body. The deprecated /api/* endpoints this client still calls answer some
-    // failures with a bare JSON string; every /api/v1 failure ships a ProblemDetails body.
+    // failures with a bare JSON string; /api/v1 failures answer with a ProblemDetails body.
     var trimmed = rawContent.Trim();
     if (trimmed.Length > 2 && trimmed[0] == '"' && trimmed[^1] == '"')
     {
