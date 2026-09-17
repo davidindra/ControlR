@@ -1,4 +1,5 @@
-﻿using MailKit.Net.Smtp;
+﻿using ControlR.Web.Server.Primitives;
+using MailKit.Net.Smtp;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using MimeKit;
 using MimeKit.Text;
@@ -8,7 +9,14 @@ namespace ControlR.Web.Server.Services;
 
 public interface IControlrEmailSender
 {
-  Task<Result> SendEmailWithResult(string email, string subject, string htmlMessage);
+  /// <summary>
+  /// Sends an email, reporting which kind of problem stopped it so the caller can answer with the
+  /// matching problem document rather than guessing: <see cref="HttpResultErrorCode.Conflict"/> when
+  /// sending is switched off, <see cref="HttpResultErrorCode.InternalServerError"/> when the SMTP
+  /// settings are missing, and <see cref="HttpResultErrorCode.ServiceUnavailable"/> when the SMTP
+  /// server refused the message.
+  /// </summary>
+  Task<HttpResult> SendEmailWithResult(string email, string subject, string htmlMessage);
 }
 
 public class EmailSender(
@@ -105,7 +113,7 @@ public class EmailSender(
     }
   }
 
-  public async Task<Result> SendEmailWithResult(string email, string subject, string htmlMessage)
+  public async Task<HttpResult> SendEmailWithResult(string email, string subject, string htmlMessage)
   {
     try
     {
@@ -118,7 +126,7 @@ public class EmailSender(
           email,
           subject);
 
-        return Result.Fail("Email sending is disabled.");
+        return HttpResult.Fail(HttpResultErrorCode.Conflict, "Email sending is disabled.");
       }
 
       if (string.IsNullOrWhiteSpace(currentOptions.SmtpDisplayName) ||
@@ -126,7 +134,9 @@ public class EmailSender(
           string.IsNullOrWhiteSpace(currentOptions.SmtpHost))
       {
         _logger.LogCritical("SMTP options are not properly configured.  Unable to send email.");
-        return Result.Fail("SMTP options are not properly configured.  Unable to send email.");
+        return HttpResult.Fail(
+          HttpResultErrorCode.InternalServerError,
+          "SMTP options are not properly configured.  Unable to send email.");
       }
 
       var message = new MimeMessage();
@@ -178,12 +188,12 @@ public class EmailSender(
       await client.DisconnectAsync(true);
 
       _logger.LogInformation("Email successfully sent to {ToEmail}.  Subject: \"{Subject}\".", email, subject);
-      return Result.Ok();
+      return HttpResult.Ok();
     }
     catch (Exception ex)
     {
       _logger.LogError(ex, "Error while sending email.");
-      return Result.Fail(ex, "Error while sending email.");
+      return HttpResult.Fail(ex, HttpResultErrorCode.ServiceUnavailable, "Error while sending email.");
     }
   }
 

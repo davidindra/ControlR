@@ -19,6 +19,9 @@ public class TestEmailController : ControllerBase
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
   public async Task<IActionResult> SendTestEmail(
     [FromServices] AppDb appDb,
     [FromServices] IControlrEmailSender emailSender,
@@ -65,9 +68,7 @@ public class TestEmailController : ControllerBase
       return Ok();
     }
 
-    return Problem(
-      detail: result.Reason,
-      statusCode: StatusCodes.Status400BadRequest,
-      title: V1ProblemTitles.InvalidRequest);
+    // Returns the kind of failure that occurred within the email sending process.
+    return result.ToActionResult();
   }
 }

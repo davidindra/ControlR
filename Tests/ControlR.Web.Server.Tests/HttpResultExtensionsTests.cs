@@ -116,6 +116,18 @@ public class HttpResultExtensionsTests
   }
 
   [Fact]
+  public void ToActionResult_ErrorResponse_DeclaresProblemJsonMediaType()
+  {
+    var result = HttpResult.Fail(HttpResultErrorCode.NotFound, "gone").ToActionResult();
+
+    var objectResult = Assert.IsType<ObjectResult>(result);
+
+    // Without a declared media type the body is negotiated as application/json, which contradicts
+    // both RFC 9457 and every V1 ProducesResponseType declaration naming application/problem+json.
+    Assert.Contains("application/problem+json", objectResult.ContentTypes);
+  }
+
+  [Fact]
   public void ToActionResult_Success_ReturnsNoContent()
   {
     var result = HttpResult.Ok().ToActionResult();

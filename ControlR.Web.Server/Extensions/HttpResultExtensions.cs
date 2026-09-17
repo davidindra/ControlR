@@ -78,9 +78,11 @@ public static class HttpResultExtensions
       }
     }
 
+    // ControllerBase.Problem() pins the media type the same way.
     return new ObjectResult(problem)
     {
       StatusCode = statusCode,
+      ContentTypes = { "application/problem+json" },
     };
   }
 
