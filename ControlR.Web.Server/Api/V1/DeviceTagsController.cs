@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using ControlR.Libraries.Api.Contracts.Dtos.ServerApi.V1.DeviceTags;
+using ControlR.Web.Server.Constants;
 
 namespace ControlR.Web.Server.Api.V1;
 

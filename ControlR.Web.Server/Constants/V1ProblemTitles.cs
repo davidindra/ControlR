@@ -1,4 +1,4 @@
-namespace ControlR.Web.Server.Api.V1;
+namespace ControlR.Web.Server.Constants;
 
 /// <summary>
 /// The titles used on V1 error bodies. A title names the kind of failure and is the same from request

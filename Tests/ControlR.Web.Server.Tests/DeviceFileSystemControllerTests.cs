@@ -30,7 +30,7 @@ namespace ControlR.Web.Server.Tests;
 /// </summary>
 public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 {
-  private const string OfflineMessage = "Device is not currently online.";
+  private const string OfflineMessage = "Device is currently offline.";
   private const string OnlineConnectionId = "test-agent-connection-id";
 
   private readonly ITestOutputHelper _testOutput = testOutput;

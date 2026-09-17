@@ -15,7 +15,7 @@ namespace ControlR.Web.Server.Api.Internal;
 [EndpointGroupName(OpenApiConstants.InternalGroupName)]
 public class DeviceFileSystemController : ControllerBase
 {
-  private const string DeviceOfflineMessage = "Device is not currently online.";
+  private const string DeviceOfflineMessage = "Device is currently offline.";
   private const string NoResponseMessage = "No response received from device agent.";
 
   [HttpPost("create-directory/{deviceId:guid}")]
@@ -157,7 +157,7 @@ public class DeviceFileSystemController : ControllerBase
     if (!device.IsOnline)
     {
       logger.LogWarning("Device {DeviceId} is not online.", deviceId);
-      return Conflict("Device is not currently online.");
+      return Conflict(DeviceOfflineMessage);
     }
 
     var streamId = Guid.NewGuid();
@@ -279,7 +279,7 @@ public class DeviceFileSystemController : ControllerBase
     if (!device.IsOnline)
     {
       logger.LogWarning("Device {DeviceId} is not online.", deviceId);
-      return Conflict("Device is not currently online.");
+      return Conflict(DeviceOfflineMessage);
     }
 
     var streamId = Guid.NewGuid();
@@ -469,7 +469,7 @@ public class DeviceFileSystemController : ControllerBase
     if (!device.IsOnline)
     {
       logger.LogWarning("Device {DeviceId} is not online.", deviceId);
-      return Conflict("Device is not currently online.");
+      return Conflict(DeviceOfflineMessage);
     }
 
     if (!Request.HasFormContentType)
@@ -619,7 +619,7 @@ public class DeviceFileSystemController : ControllerBase
     if (!device.IsOnline)
     {
       logger.LogWarning("Device {DeviceId} is not online.", deviceId);
-      return Conflict("Device is not currently online.");
+      return Conflict(DeviceOfflineMessage);
     }
 
     var streamId = Guid.NewGuid();

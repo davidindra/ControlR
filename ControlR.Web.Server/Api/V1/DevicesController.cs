@@ -10,6 +10,7 @@ using ControlR.Web.Server.Services.DeviceManagement;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using ControlR.Libraries.Api.Contracts.Dtos.ServerApi.V1;
+using ControlR.Web.Server.Constants;
 
 namespace ControlR.Web.Server.Api.V1;
 
