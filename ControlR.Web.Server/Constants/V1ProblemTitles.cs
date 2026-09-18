@@ -34,6 +34,7 @@ internal static class V1ProblemTitles
 
   internal const string RequestTimedOut = "Request timed out.";
   internal const string ServiceUnavailable = "Service unavailable.";
+  internal const string TooManyRequests = "Too many requests.";
   internal const string Unauthorized = "Unauthorized.";
   internal const string ValidationFailed = "Validation failed.";
 
@@ -45,6 +46,7 @@ internal static class V1ProblemTitles
     [StatusCodes.Status404NotFound] = NotFound,
     [StatusCodes.Status408RequestTimeout] = RequestTimedOut,
     [StatusCodes.Status409Conflict] = Conflict,
+    [StatusCodes.Status429TooManyRequests] = TooManyRequests,
     [StatusCodes.Status500InternalServerError] = InternalServerError,
     [StatusCodes.Status501NotImplemented] = NotImplemented,
     [StatusCodes.Status502BadGateway] = BadGateway,

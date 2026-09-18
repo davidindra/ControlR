@@ -29,6 +29,24 @@ public class V1ProblemDetailsMiddlewareTests(ITestOutputHelper testOutput)
     await AssertProblemBodyAsync(response, StatusCodes.Status401Unauthorized, "Unauthorized.");
   }
 
+  /// <summary>
+  /// The guard's other half. The middleware only owns <c>/api</c>, so a failure the browser sees, such
+  /// as an unmatched page route, must leave the pipeline with the response it produced.
+  /// </summary>
+  [Fact]
+  public async Task UnmatchedNonApiRoute_WhenNoEndpointMatches_LeavesResponseWithoutProblemBody()
+  {
+    using var testServer = await TestWebServerBuilder.CreateTestServer(testOutput);
+    using var httpClient = await testServer.GetHttpClient();
+
+    var response = await httpClient.GetAsync(
+      "/no-such-page",
+      TestContext.Current.CancellationToken);
+
+    Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    Assert.NotEqual("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+  }
+
   [Fact]
   public async Task UnmatchedV1Route_Returns404ProblemDetails()
   {

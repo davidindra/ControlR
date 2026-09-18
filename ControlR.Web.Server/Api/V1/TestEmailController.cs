@@ -24,17 +24,8 @@ public class TestEmailController : ControllerBase
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
   public async Task<IActionResult> SendTestEmail(
     [FromServices] AppDb appDb,
-    [FromServices] IControlrEmailSender emailSender,
-    [FromServices] IOptionsMonitor<AppOptions> appOptions)
+    [FromServices] IControlrEmailSender emailSender)
   {
-    if (appOptions.CurrentValue.DisableEmailSending)
-    {
-      return Problem(
-        detail: "Email sending is disabled in application settings.",
-        statusCode: StatusCodes.Status400BadRequest,
-        title: V1ProblemTitles.InvalidRequest);
-    }
-
     if (!User.TryGetUserId(out var userId))
     {
       return Problem(
@@ -68,7 +59,7 @@ public class TestEmailController : ControllerBase
       return Ok();
     }
 
-    // Returns the kind of failure that occurred within the email sending process.
+    // Returns the kind of failure that occurred in the EmailSender.
     return result.ToActionResult();
   }
 }
