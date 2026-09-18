@@ -1,4 +1,5 @@
 using ControlR.Libraries.Api.Contracts.Dtos.ServerApi.V1.PermissionAssignments;
+using ControlR.Web.Client.Helpers;
 
 namespace ControlR.Web.Client.Components.Dialogs;
 
@@ -66,6 +67,14 @@ public partial class PermissionAssignmentDialog : ComponentBase
     PrincipalKind == PermissionPrincipalKind.ServiceAccount &&
     AccountKind == ServiceAccountKind.Server;
 
+  /// <summary>
+  /// The picker's bound value, wrapping <see cref="_selectedPermission"/> as a selectable row. It is
+  /// not a one-way parameter on the autocomplete, so the row is rebuilt here rather than stored; value
+  /// equality on the record makes it match the dropdown's own row.
+  /// </summary>
+  private PermissionPickerRow? SelectedPickerRow =>
+    _selectedPermission is { } entry ? PermissionPickerRow.ForEntry(DisplayOf(entry), entry) : null;
+
   protected override async Task OnInitializedAsync()
   {
     if (PermissionCatalogStore.Items.Count == 0)
@@ -105,6 +114,8 @@ public partial class PermissionAssignmentDialog : ComponentBase
       }
     }
   }
+
+  private static string DisplayOf(PermissionCatalogEntryDto entry) => $"{entry.DisplayName} ({entry.Name})";
 
   private static bool HasNonServerScope(PermissionCatalogEntryDto entry) =>
     entry.AllowedScopeKinds.Any(static kind => kind != PermissionScopeKind.Server);
@@ -152,27 +163,54 @@ public partial class PermissionAssignmentDialog : ComponentBase
     }
   }
 
-  private void HandlePermissionChanged(PermissionCatalogEntryDto? value)
+  private void HandlePermissionRowChanged(PermissionPickerRow? row)
   {
-    _selectedPermission = value;
-    _permissionName = value?.Name ?? string.Empty;
-    _scopeKind = BroadestAvailableScope(value);
+    if (row is { IsHeader: true })
+    {
+      // A header cannot be clicked or arrowed into, so this guard only backstops a stray programmatic
+      // selection. Leaving the current permission and scope untouched is the correct no-op.
+      return;
+    }
+
+    _selectedPermission = row?.Entry;
+    _permissionName = row?.Entry?.Name ?? string.Empty;
+    _scopeKind = BroadestAvailableScope(row?.Entry);
     _scopeId = null;
   }
 
-  private async Task<IEnumerable<PermissionCatalogEntryDto>> SearchPermissions(
+  /// <summary>
+  /// Builds the grouped dropdown: a family header above each run of matching entries. An unseen family
+  /// (no label) renders its entries with no header, so a newer server's permissions stay pickable.
+  /// </summary>
+  private async Task<IEnumerable<PermissionPickerRow>> SearchPermissionRows(
     string query,
     CancellationToken cancellationToken)
   {
-    if (string.IsNullOrWhiteSpace(query))
+    await Task.CompletedTask;
+
+    var matches = string.IsNullOrWhiteSpace(query)
+      ? _catalog
+      : [.. _catalog.Where(p =>
+        p.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+        p.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase))];
+
+    var rows = new List<PermissionPickerRow>();
+    foreach (var group in PermissionGrouping.GroupForDisplay(matches))
     {
-      return _catalog;
+      // An unlabelled family (a name this build has never seen) renders its entries with no header,
+      // so a newer server's permissions stay pickable instead of disappearing.
+      if (group.Label is { } label)
+      {
+        rows.Add(PermissionPickerRow.Header(label));
+      }
+
+      foreach (var entry in group.Entries)
+      {
+        rows.Add(PermissionPickerRow.ForEntry(DisplayOf(entry), entry));
+      }
     }
 
-    await Task.CompletedTask;
-    return _catalog.Where(p =>
-      p.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-      p.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase));
+    return rows;
   }
 
   private async Task Submit()
