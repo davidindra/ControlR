@@ -93,6 +93,54 @@ public interface IDeviceFileSystemService
     Guid? expectedTenantId = null);
 
   /// <summary>
+  /// Asks the agent to pack the requested paths into one archive and stream it back. The reported size
+  /// is the agent's, not a count of what has arrived.
+  /// </summary>
+  Task<FileSystemOutcome<FileTransferSession>> StartArchiveDownload(
+    ClaimsPrincipal user,
+    Guid deviceId,
+    InternalDtos.DownloadArchiveRequestDto request,
+    CancellationToken cancellationToken,
+    Guid? expectedTenantId = null);
+
+  /// <summary>
+  /// Asks the agent to stream one file back. The transfer carries the agent's own display name for the
+  /// file, which is what the response's <c>Content-Disposition</c> should carry.
+  /// </summary>
+  Task<FileSystemOutcome<FileTransferSession>> StartFileDownload(
+    ClaimsPrincipal user,
+    Guid deviceId,
+    string filePath,
+    CancellationToken cancellationToken,
+    Guid? expectedTenantId = null);
+
+  /// <summary>
+  /// Asks the agent to stream the contents of one log file back. A log file's length is unknown up
+  /// front, so the session reports no size.
+  /// </summary>
+  Task<FileSystemOutcome<FileTransferSession>> StartLogFileContents(
+    ClaimsPrincipal user,
+    Guid deviceId,
+    string filePath,
+    CancellationToken cancellationToken,
+    Guid? expectedTenantId = null);
+
+  /// <summary>
+  /// Pipes <paramref name="fileStream" /> to the agent, which writes it to disk. The bytes flow while
+  /// the agent call is in flight rather than being buffered first.
+  /// </summary>
+  Task<FileSystemOutcome> UploadFile(
+    ClaimsPrincipal user,
+    Guid deviceId,
+    Stream fileStream,
+    string fileName,
+    long fileLength,
+    string targetSaveDirectory,
+    bool overwrite,
+    CancellationToken cancellationToken,
+    Guid? expectedTenantId = null);
+
+  /// <summary>
   /// Asks the agent whether a directory and file name combine into a usable path. The agent's answer
   /// is returned as-is, including an answer that the path is invalid.
   /// </summary>
@@ -463,6 +511,310 @@ public class DeviceFileSystemService(
     {
       _logger.LogError(ex, "Error while streaming subdirectories for device {DeviceId} path {DirectoryPath}", request.DeviceId, request.DirectoryPath);
       return new(FileSystemFailure.Unexpected, ex.Message, null);
+    }
+  }
+
+  public async Task<FileSystemOutcome<FileTransferSession>> StartArchiveDownload(
+    ClaimsPrincipal user,
+    Guid deviceId,
+    InternalDtos.DownloadArchiveRequestDto request,
+    CancellationToken cancellationToken,
+    Guid? expectedTenantId = null)
+  {
+    var guarded = await Guard(
+      user,
+      deviceId,
+      DeviceResourcePolicies.FileSystemTransferDownload,
+      expectedTenantId,
+      cancellationToken);
+
+    if (guarded is not { Succeeded: true, Value: { } device })
+    {
+      return new(guarded.Failure, guarded.Reason, null);
+    }
+
+    var streamId = Guid.NewGuid();
+    var signaler = _hubStreamStore.GetOrCreate<byte[]>(streamId, HubStreamExpiration.FileTransfer);
+    FileTransferSession? session = null;
+
+    try
+    {
+      var downloadRequest = new FileArchiveDownloadHubDto(
+        streamId,
+        request.ArchiveFileName,
+        [.. request.TargetPaths]);
+
+      var result = await _agentHub.Clients
+        .Client(device.ConnectionId)
+        .UploadArchiveToViewer(downloadRequest);
+
+      if (result is null)
+      {
+        _logger.LogWarning("No response received from agent for archive download on device {DeviceId}", deviceId);
+        return new(FileSystemFailure.NoResponse, null, null);
+      }
+
+      if (!result.IsSuccess)
+      {
+        _logger.LogWarning("Archive download request failed for device {DeviceId}: {Reason}",
+          deviceId, result.Reason);
+        return new(FileSystemFailure.RemoteFailure, result.Reason, null);
+      }
+
+      _logger.LogInformation("Archive download started for device {DeviceId} with {ItemCount} item(s)",
+        deviceId, request.TargetPaths.Count);
+
+      session = new FileTransferSession(
+        signaler,
+        result.Value.FileDisplayName,
+        result.Value.FileSize,
+        cancellationToken);
+
+      return new(FileSystemFailure.None, null, session);
+    }
+    catch (OperationCanceledException)
+    {
+      _logger.LogWarning("Archive download for device {DeviceId} was canceled.", deviceId);
+      return new(FileSystemFailure.Cancelled, null, null);
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "Error starting archive download from device {DeviceId}", deviceId);
+      return new(FileSystemFailure.Unexpected, ex.Message, null);
+    }
+    finally
+    {
+      // The session owns the signaler once it is built. A path that returns without one has to
+      // release it here, because no response body is coming to drain it.
+      if (session is null)
+      {
+        signaler.Dispose();
+      }
+    }
+  }
+
+  public async Task<FileSystemOutcome<FileTransferSession>> StartFileDownload(
+    ClaimsPrincipal user,
+    Guid deviceId,
+    string filePath,
+    CancellationToken cancellationToken,
+    Guid? expectedTenantId = null)
+  {
+    var guarded = await Guard(
+      user,
+      deviceId,
+      DeviceResourcePolicies.FileSystemTransferDownload,
+      expectedTenantId,
+      cancellationToken);
+
+    if (guarded is not { Succeeded: true, Value: { } device })
+    {
+      return new(guarded.Failure, guarded.Reason, null);
+    }
+
+    var streamId = Guid.NewGuid();
+    var signaler = _hubStreamStore.GetOrCreate<byte[]>(streamId, HubStreamExpiration.FileTransfer);
+    FileTransferSession? session = null;
+
+    try
+    {
+      var downloadRequest = new FileDownloadHubDto(streamId, filePath);
+
+      var result = await _agentHub.Clients
+        .Client(device.ConnectionId)
+        .UploadFileToViewer(downloadRequest);
+
+      if (result is null)
+      {
+        _logger.LogWarning("No response received from agent for file download of {FilePath} on device {DeviceId}",
+          filePath, deviceId);
+        return new(FileSystemFailure.NoResponse, null, null);
+      }
+
+      if (!result.IsSuccess)
+      {
+        _logger.LogWarning("File download request failed for {FilePath} on device {DeviceId}: {Reason}",
+          filePath, deviceId, result.Reason);
+        return new(FileSystemFailure.RemoteFailure, result.Reason, null);
+      }
+
+      _logger.LogInformation("File download started for {FilePath} from device {DeviceId}",
+        filePath, deviceId);
+
+      session = new FileTransferSession(
+        signaler,
+        result.Value.FileDisplayName,
+        result.Value.FileSize,
+        cancellationToken);
+
+      return new(FileSystemFailure.None, null, session);
+    }
+    catch (OperationCanceledException)
+    {
+      _logger.LogWarning("File download for {FilePath} from device {DeviceId} was canceled.",
+        filePath, deviceId);
+      return new(FileSystemFailure.Cancelled, null, null);
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "Error starting file download of {FilePath} from device {DeviceId}",
+        filePath, deviceId);
+      return new(FileSystemFailure.Unexpected, ex.Message, null);
+    }
+    finally
+    {
+      if (session is null)
+      {
+        signaler.Dispose();
+      }
+    }
+  }
+
+  public async Task<FileSystemOutcome<FileTransferSession>> StartLogFileContents(
+    ClaimsPrincipal user,
+    Guid deviceId,
+    string filePath,
+    CancellationToken cancellationToken,
+    Guid? expectedTenantId = null)
+  {
+    var guarded = await Guard(
+      user,
+      deviceId,
+      DeviceResourcePolicies.LogsRead,
+      expectedTenantId,
+      cancellationToken);
+
+    if (guarded is not { Succeeded: true, Value: { } device })
+    {
+      return new(guarded.Failure, guarded.Reason, null);
+    }
+
+    var streamId = Guid.NewGuid();
+    var signaler = _hubStreamStore.GetOrCreate<byte[]>(streamId, HubStreamExpiration.FileTransfer);
+    FileTransferSession? session = null;
+
+    try
+    {
+      var streamRequest = new StreamFileContentsRequestHubDto(streamId, filePath);
+
+      var result = await _agentHub.Clients
+        .Client(device.ConnectionId)
+        .StreamFileContents(streamRequest);
+
+      if (result is null)
+      {
+        _logger.LogWarning("No response received from agent for log file contents of {FilePath} on device {DeviceId}",
+          filePath, deviceId);
+        return new(FileSystemFailure.NoResponse, null, null);
+      }
+
+      if (!result.IsSuccess)
+      {
+        _logger.LogWarning("Log file contents stream request failed for {FilePath} on device {DeviceId}: {Reason}",
+          filePath, deviceId, result.Reason);
+        return new(FileSystemFailure.RemoteFailure, result.Reason, null);
+      }
+
+      // The agent streams text with no length, so the response states none.
+      session = new FileTransferSession(signaler, Path.GetFileName(filePath), null, cancellationToken);
+
+      return new(FileSystemFailure.None, null, session);
+    }
+    catch (OperationCanceledException)
+    {
+      _logger.LogWarning("Log file contents stream for {FilePath} on device {DeviceId} was canceled.",
+        filePath, deviceId);
+      return new(FileSystemFailure.Cancelled, null, null);
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "Error starting log file contents stream for {FilePath} on device {DeviceId}",
+        filePath, deviceId);
+      return new(FileSystemFailure.Unexpected, ex.Message, null);
+    }
+    finally
+    {
+      if (session is null)
+      {
+        signaler.Dispose();
+      }
+    }
+  }
+
+  public async Task<FileSystemOutcome> UploadFile(
+    ClaimsPrincipal user,
+    Guid deviceId,
+    Stream fileStream,
+    string fileName,
+    long fileLength,
+    string targetSaveDirectory,
+    bool overwrite,
+    CancellationToken cancellationToken,
+    Guid? expectedTenantId = null)
+  {
+    var guarded = await Guard(
+      user,
+      deviceId,
+      DeviceResourcePolicies.FileSystemTransferUpload,
+      expectedTenantId,
+      cancellationToken);
+
+    if (guarded is not { Succeeded: true, Value: { } device })
+    {
+      return new(guarded.Failure, guarded.Reason);
+    }
+
+    var streamId = Guid.NewGuid();
+    using var signaler = _hubStreamStore.GetOrCreate<byte[]>(streamId, HubStreamExpiration.FileTransfer);
+    var uploadRequest = new FileUploadHubDto(
+      streamId,
+      targetSaveDirectory,
+      fileName,
+      fileLength,
+      overwrite);
+
+    try
+    {
+      // The bytes start flowing before the agent is asked to read them, so neither side has to buffer
+      // the whole file.
+      var writeToStreamTask = signaler.WriteFromStream(fileStream, cancellationToken);
+
+      var result = await _agentHub.Clients
+        .Client(device.ConnectionId)
+        .DownloadFileFromViewer(uploadRequest);
+
+      await writeToStreamTask.WaitAsync(cancellationToken);
+
+      if (result is null)
+      {
+        _logger.LogWarning("No response received from agent for file upload of {FileName} to device {DeviceId}",
+          fileName, deviceId);
+        return new(FileSystemFailure.NoResponse, null);
+      }
+
+      if (!result.IsSuccess)
+      {
+        _logger.LogWarning("File upload request failed for {FileName} to device {DeviceId}: {Reason}",
+          fileName, deviceId, result.Reason);
+        return new(FileSystemFailure.RemoteFailure, result.Reason);
+      }
+
+      _logger.LogInformation("File upload completed for {FileName} to device {DeviceId}",
+        fileName, deviceId);
+
+      return new(FileSystemFailure.None, null);
+    }
+    catch (OperationCanceledException)
+    {
+      _logger.LogWarning("File upload for {FileName} to device {DeviceId} timed out or was canceled.",
+        fileName, deviceId);
+      return new(FileSystemFailure.Cancelled, null);
+    }
+    catch (Exception ex)
+    {
+      _logger.LogError(ex, "Error uploading file {FileName} to device {DeviceId}",
+        fileName, deviceId);
+      return new(FileSystemFailure.Unexpected, ex.Message);
     }
   }
 

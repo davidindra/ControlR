@@ -76,6 +76,7 @@ public class DeviceFileSystemController : ControllerBase
 
   [HttpPost("download-archive/{deviceId:guid}")]
   [DisableRequestTimeout]
+  [ApiDeprecated("/api/v1/device-file-system/download-archive/{deviceId}?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/download-archive/{deviceId} with a required tenantId. The response is the same octet-stream, and V1 answers every failure with a ProblemDetails body.")]
   public async Task<IActionResult> DownloadArchive(
     [FromRoute] Guid deviceId,
     [FromBody] InternalDtos.DownloadArchiveRequestDto request,
@@ -117,6 +118,7 @@ public class DeviceFileSystemController : ControllerBase
 
   [HttpGet("download/{deviceId:guid}")]
   [DisableRequestTimeout]
+  [ApiDeprecated("/api/v1/device-file-system/download/{deviceId}?tenantId={tenantId}", Note = "Use GET /api/v1/device-file-system/download/{deviceId} with a required tenantId. The response is the same octet-stream, and V1 answers every failure with a ProblemDetails body.")]
   public async Task<IActionResult> DownloadFile(
     [FromRoute] Guid deviceId,
     [FromQuery] string filePath,
@@ -240,6 +242,7 @@ public class DeviceFileSystemController : ControllerBase
 
   [HttpGet("logs/{deviceId:guid}/contents")]
   [DisableRequestTimeout]
+  [ApiDeprecated("/api/v1/device-file-system/logs/{deviceId}/contents?tenantId={tenantId}", Note = "Use GET /api/v1/device-file-system/logs/{deviceId}/contents with a required tenantId. The response is the same text stream, and V1 answers every failure with a ProblemDetails body.")]
   public async Task<IActionResult> GetLogFileContents(
     [FromRoute] Guid deviceId,
     [FromQuery] string filePath,
@@ -431,6 +434,7 @@ public class DeviceFileSystemController : ControllerBase
   [HttpPost("upload/{deviceId:guid}")]
   [DisableRequestSizeLimit]
   [DisableRequestTimeout]
+  [ApiDeprecated("/api/v1/device-file-system/upload/{deviceId}?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/upload/{deviceId} with a required tenantId. The V1 response is the named DeviceFileUploadResponseDto instead of an ad hoc body, and V1 answers every failure with a ProblemDetails body.")]
   public async Task<IActionResult> UploadFile(
     [FromRoute] Guid deviceId,
     [FromServices] AppDb appDb,

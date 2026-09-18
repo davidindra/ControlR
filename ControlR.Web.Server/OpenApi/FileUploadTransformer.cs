@@ -3,19 +3,38 @@ using Microsoft.OpenApi;
 
 namespace ControlR.Web.Server.OpenApi;
 
+/// <summary>
+/// Gives both upload operations the multipart request body their actions cannot describe, because the
+/// actions read the form themselves rather than binding it as a parameter.
+/// </summary>
 public class FileUploadTransformer : IOpenApiDocumentTransformer
 {
+  private static readonly string[] _uploadPaths =
+  [
+    $"{HttpConstants.Internal.DeviceFileSystemEndpoint}/upload/{{deviceId}}",
+    $"{HttpConstants.V1.DeviceFileSystemEndpoint}/upload/{{deviceId}}",
+  ];
+
   public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
   {
-    var pathName = $"{HttpConstants.Internal.DeviceFileSystemEndpoint}/upload/{{deviceId}}";
+    foreach (var pathName in _uploadPaths)
+    {
+      ApplyUploadRequestBody(document, pathName);
+    }
+
+    return Task.CompletedTask;
+  }
+
+  private static void ApplyUploadRequestBody(OpenApiDocument document, string pathName)
+  {
     if (!document.Paths.TryGetValue(pathName, out var uploadPath))
     {
-      return Task.CompletedTask;
+      return;
     }
 
     if (uploadPath.Operations is not { } operations)
     {
-      return Task.CompletedTask;
+      return;
     }
 
     foreach (var operation in operations.Values)
@@ -41,6 +60,5 @@ public class FileUploadTransformer : IOpenApiDocumentTransformer
         }
       };
     }
-    return Task.CompletedTask;
   }
 }
