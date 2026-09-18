@@ -211,7 +211,7 @@ public class DesktopPreviewV1ControllerTests(ITestOutputHelper testOutput)
   [Fact]
   public async Task GetDesktopPreview_WhenTheProcessHasAPreview_StreamsTheImage()
   {
-    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput, recordHubStreamSessions: true);
     using var scope = testApp.CreateScope();
     var harness = await Harness.CreateAsync(scope, "v1-preview-success@test.local");
     var body = harness.CaptureResponseBody();
@@ -239,6 +239,7 @@ public class DesktopPreviewV1ControllerTests(ITestOutputHelper testOutput)
     Assert.IsType<EmptyResult>(result);
     Assert.Equal<byte[]>([0xFF, 0xD8, 0xFF], body.ToArray());
     Assert.Equal("image/jpeg", harness.Controller.Response.ContentType);
+    AssertPreviewLifetime(harness);
     Assert.Equal([OnlineConnectionId], harness.ConnectionIds);
 
     var dto = Assert.IsType<DesktopPreviewRequestDto>(forwarded);
@@ -254,6 +255,16 @@ public class DesktopPreviewV1ControllerTests(ITestOutputHelper testOutput)
     Assert.Equal(StatusCodes.Status404NotFound, problem.Status);
     Assert.Equal("Not found.", problem.Title);
     return problem;
+  }
+
+  /// <summary>
+  /// A preview session lives as long as a preview, so the call site states that lifetime rather than
+  /// taking whatever the store's default would be.
+  /// </summary>
+  private static void AssertPreviewLifetime(Harness harness)
+  {
+    var recorder = Assert.IsType<RecordingHubStreamStore>(harness.HubStreamStore);
+    Assert.Equal([HubStreamExpiration.DesktopPreview], recorder.CreatedSessions.Select(x => x.Expiration));
   }
 
   private static ProblemDetails AssertServiceUnavailable(IActionResult result, string expectedDetail)

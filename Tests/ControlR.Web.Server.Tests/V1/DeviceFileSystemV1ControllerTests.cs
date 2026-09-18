@@ -618,7 +618,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
   [Fact]
   public async Task DownloadArchive_WhenTheRequestIsUsable_StreamsTheArchiveWithTheAgentsDisplayName()
   {
-    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput, recordHubStreamSessions: true);
     using var scope = testApp.CreateScope();
     var harness = await Harness.CreateAsync(scope, "v1-dfs-archive-success@test.local");
     var body = harness.CaptureResponseBody();
@@ -643,6 +643,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     Assert.Equal("application/octet-stream", harness.Controller.Response.ContentType);
     Assert.Equal(3, harness.Controller.Response.ContentLength);
     AssertAttachmentNamed(harness, "packed.zip");
+    AssertTransferLifetime(harness);
     Assert.Equal([OnlineConnectionId], harness.ConnectionIds);
     harness.AgentClient.Verify(
       x => x.UploadArchiveToViewer(It.Is<FileArchiveDownloadHubDto>(
@@ -809,7 +810,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
   [Fact]
   public async Task DownloadFile_WhenTheRequestIsUsable_StreamsTheFileWithTheAgentsDisplayName()
   {
-    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput, recordHubStreamSessions: true);
     using var scope = testApp.CreateScope();
     var harness = await Harness.CreateAsync(scope, "v1-dfs-download-success@test.local");
     var body = harness.CaptureResponseBody();
@@ -834,6 +835,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     Assert.Equal("application/octet-stream", harness.Controller.Response.ContentType);
     Assert.Equal(3, harness.Controller.Response.ContentLength);
     AssertAttachmentNamed(harness, "report.pdf");
+    AssertTransferLifetime(harness);
     Assert.Equal([OnlineConnectionId], harness.ConnectionIds);
     harness.AgentClient.Verify(
       x => x.UploadFileToViewer(It.Is<FileDownloadHubDto>(dto => dto.FilePath == "/parent/report.pdf")),
@@ -1151,7 +1153,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
   [Fact]
   public async Task GetLogFileContents_WhenTheRequestIsUsable_StreamsInlineTextWithNoStatedLength()
   {
-    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput, recordHubStreamSessions: true);
     using var scope = testApp.CreateScope();
     var harness = await Harness.CreateAsync(scope, "v1-dfs-logcontents-success@test.local");
     var body = harness.CaptureResponseBody();
@@ -1178,6 +1180,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     // The agent streams text with no length, so the response states none.
     Assert.Null(harness.Controller.Response.ContentLength);
     AssertDisposition(harness, "inline", "app.log");
+    AssertTransferLifetime(harness);
     harness.AgentClient.Verify(
       x => x.StreamFileContents(It.Is<StreamFileContentsRequestHubDto>(
         dto => dto.FilePath == "/var/log/controlr/app.log")),
@@ -2036,7 +2039,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
   [Fact]
   public async Task UploadFile_WhenTheRequestIsUsable_PipesTheBytesAndAnswersTheNamedEnvelope()
   {
-    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput, recordHubStreamSessions: true);
     using var scope = testApp.CreateScope();
     var harness = await Harness.CreateAsync(scope, "v1-dfs-upload-success@test.local");
     SetUploadForm(harness, "installer.msi", [9, 8, 7], "/incoming", overwrite: true);
@@ -2065,10 +2068,11 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       TestContext.Current.CancellationToken);
 
     Assert.Equal<byte[]>([9, 8, 7], received.ToArray());
+    AssertTransferLifetime(harness);
 
     var ok = Assert.IsType<OkObjectResult>(result);
     var response = Assert.IsType<DeviceFileUploadResponseDto>(ok.Value);
-    Assert.Equal("File upload completed", response.Message);
+    Assert.Equal("File uploaded successfully", response.Message);
     Assert.Equal("installer.msi", response.FileName);
     Assert.Equal([OnlineConnectionId], harness.ConnectionIds);
     harness.AgentClient.Verify(
@@ -2345,6 +2349,12 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     Assert.Equal(StatusCodes.Status404NotFound, problem.Status);
     Assert.Equal("Not found.", problem.Title);
     return problem;
+  }
+
+  private static void AssertTransferLifetime(Harness harness)
+  {
+    var recorder = Assert.IsType<RecordingHubStreamStore>(harness.HubStreamStore);
+    Assert.Equal([HubStreamExpiration.FileTransfer], recorder.CreatedSessions.Select(x => x.Expiration));
   }
 
   /// <summary>

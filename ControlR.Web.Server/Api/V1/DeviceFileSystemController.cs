@@ -148,7 +148,7 @@ public class DeviceFileSystemController(
     var archiveFileName = ArchiveFileNameHelper.NormalizeArchiveFileName(request.ArchiveFileName);
     if (archiveFileName is null)
     {
-      return InvalidRequest("An archive file name is required.");
+      return InvalidRequest("The archive file name is not a usable file name.");
     }
 
     if (request.TargetPaths is null || request.TargetPaths.Count == 0)
@@ -174,7 +174,7 @@ public class DeviceFileSystemController(
         session,
         "application/octet-stream",
         asAttachment: true,
-        "The archive is larger than the server's transfer limit.",
+        tooLargeDetail: "The archive is larger than the server's transfer limit.",
         cancellationToken);
     }
   }
@@ -228,7 +228,7 @@ public class DeviceFileSystemController(
         session,
         "application/octet-stream",
         asAttachment: true,
-        "The file is larger than the server's transfer limit.",
+        tooLargeDetail: "The file is larger than the server's transfer limit.",
         cancellationToken);
     }
   }
@@ -282,7 +282,6 @@ public class DeviceFileSystemController(
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status408RequestTimeout, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status413RequestEntityTooLarge, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway, "application/problem+json")]
   public async Task<IActionResult> GetLogFileContents(
@@ -315,11 +314,12 @@ public class DeviceFileSystemController(
 
     using (session)
     {
+      // A log file's length is unknown until it ends, so there is no size to hold against the limit.
       return await StreamTransfer(
         session,
         "text/plain",
         asAttachment: false,
-        "The log file is larger than the server's transfer limit.",
+        tooLargeDetail: null,
         cancellationToken);
     }
   }
@@ -545,7 +545,7 @@ public class DeviceFileSystemController(
       return MapFailure(outcome, "An error occurred during file upload.");
     }
 
-    return Ok(new DeviceFileUploadResponseDto("File upload completed", file.FileName));
+    return Ok(new DeviceFileUploadResponseDto("File uploaded successfully", file.FileName));
   }
 
   /// <summary>
@@ -735,11 +735,11 @@ public class DeviceFileSystemController(
     FileTransferSession session,
     string contentType,
     bool asAttachment,
-    string tooLargeDetail,
+    string? tooLargeDetail,
     CancellationToken cancellationToken)
   {
     var maxFileSize = _appOptions.CurrentValue.MaxFileTransferSize;
-    if (maxFileSize > 0 && session.FileSize > maxFileSize)
+    if (tooLargeDetail is not null && maxFileSize > 0 && session.FileSize > maxFileSize)
     {
       return TransferTooLarge(tooLargeDetail);
     }
