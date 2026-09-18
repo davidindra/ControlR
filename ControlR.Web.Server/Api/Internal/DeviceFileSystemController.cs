@@ -162,7 +162,7 @@ public class DeviceFileSystemController : ControllerBase
     }
 
     var streamId = Guid.NewGuid();
-    using var signaler = hubStreamStore.GetOrCreate<byte[]>(streamId, TimeSpan.FromMinutes(30));
+    using var signaler = hubStreamStore.GetOrCreate<byte[]>(streamId, HubStreamExpiration.FileTransfer);
 
     var downloadRequest = new FileDownloadHubDto(streamId, filePath);
 
@@ -284,7 +284,7 @@ public class DeviceFileSystemController : ControllerBase
     }
 
     var streamId = Guid.NewGuid();
-    using var signaler = hubStreamStore.GetOrCreate<byte[]>(streamId, TimeSpan.FromMinutes(30));
+    using var signaler = hubStreamStore.GetOrCreate<byte[]>(streamId, HubStreamExpiration.FileTransfer);
 
     var streamRequest = new StreamFileContentsRequestHubDto(streamId, filePath);
 
@@ -500,7 +500,7 @@ public class DeviceFileSystemController : ControllerBase
     }
 
     var streamId = Guid.NewGuid();
-    using var signaler = hubStreamStore.GetOrCreate<byte[]>(streamId, TimeSpan.FromMinutes(30));
+    using var signaler = hubStreamStore.GetOrCreate<byte[]>(streamId, HubStreamExpiration.FileTransfer);
     var uploadRequest = new FileUploadHubDto(streamId, targetSaveDirectory, file.FileName, file.Length, overwrite);
 
     try
@@ -624,7 +624,7 @@ public class DeviceFileSystemController : ControllerBase
     }
 
     var streamId = Guid.NewGuid();
-    using var signaler = hubStreamStore.GetOrCreate<byte[]>(streamId, TimeSpan.FromMinutes(30));
+    using var signaler = hubStreamStore.GetOrCreate<byte[]>(streamId, HubStreamExpiration.FileTransfer);
     var downloadRequest = new FileArchiveDownloadHubDto(streamId, archiveFileName, request.TargetPaths.ToArray());
 
     try

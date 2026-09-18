@@ -582,7 +582,7 @@ public class DeviceFileSystemService(
     CancellationToken cancellationToken)
   {
     var streamId = Guid.NewGuid();
-    using var signaler = _hubStreamStore.GetOrCreate<InternalDtos.FileSystemEntryDto[]>(streamId);
+    using var signaler = _hubStreamStore.GetOrCreate<InternalDtos.FileSystemEntryDto[]>(streamId, HubStreamExpiration.Listing);
 
     var result = await startStream(streamId);
 

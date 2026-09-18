@@ -491,7 +491,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
       .Setup(x => x.StreamDirectoryContents(It.IsAny<DirectoryContentsStreamRequestHubDto>()))
       .ReturnsAsync((DirectoryContentsStreamRequestHubDto dto) =>
       {
-        harness.HubStreamStore.GetOrCreate<InternalDtos.FileSystemEntryDto[]>(dto.StreamId).SetWriteCompleted();
+        harness.HubStreamStore.GetOrCreate<InternalDtos.FileSystemEntryDto[]>(dto.StreamId, HubStreamExpiration.Listing).SetWriteCompleted();
         return HubResult.Ok();
       });
 
@@ -614,7 +614,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
       .ReturnsAsync((DirectoryContentsStreamRequestHubDto dto) =>
       {
         deviceIds.Add(dto.DeviceId);
-        var signaler = harness.HubStreamStore.GetOrCreate<InternalDtos.FileSystemEntryDto[]>(dto.StreamId);
+        var signaler = harness.HubStreamStore.GetOrCreate<InternalDtos.FileSystemEntryDto[]>(dto.StreamId, HubStreamExpiration.Listing);
         signaler.Writer.TryWrite([CreateEntry("a.txt"), CreateEntry("b.txt")]);
         signaler.Writer.TryWrite([CreateEntry("c.txt")]);
         signaler.Metadata = true;
@@ -1131,7 +1131,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
       .ReturnsAsync((SubdirectoriesStreamRequestHubDto dto) =>
       {
         deviceIds.Add(dto.DeviceId);
-        var signaler = harness.HubStreamStore.GetOrCreate<InternalDtos.FileSystemEntryDto[]>(dto.StreamId);
+        var signaler = harness.HubStreamStore.GetOrCreate<InternalDtos.FileSystemEntryDto[]>(dto.StreamId, HubStreamExpiration.Listing);
         signaler.Writer.TryWrite([CreateEntry("dir-a", isDirectory: true)]);
         signaler.Writer.TryWrite([CreateEntry("dir-b", isDirectory: true)]);
 

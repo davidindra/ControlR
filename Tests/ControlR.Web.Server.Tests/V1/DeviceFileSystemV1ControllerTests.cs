@@ -575,7 +575,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       .Setup(x => x.StreamDirectoryContents(It.IsAny<DirectoryContentsStreamRequestHubDto>()))
       .ReturnsAsync((DirectoryContentsStreamRequestHubDto dto) =>
       {
-        var signaler = harness.HubStreamStore.GetOrCreate<InternalDtos.FileSystemEntryDto[]>(dto.StreamId);
+        var signaler = harness.HubStreamStore.GetOrCreate<InternalDtos.FileSystemEntryDto[]>(dto.StreamId, HubStreamExpiration.Listing);
         signaler.Writer.TryWrite([CreateEntry("a.txt"), CreateEntry("b.txt")]);
         signaler.Writer.TryWrite([CreateEntry("sub", isDirectory: true)]);
         signaler.Metadata = true;
@@ -1243,7 +1243,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       .Setup(x => x.StreamSubdirectories(It.IsAny<SubdirectoriesStreamRequestHubDto>()))
       .ReturnsAsync((SubdirectoriesStreamRequestHubDto dto) =>
       {
-        var signaler = harness.HubStreamStore.GetOrCreate<InternalDtos.FileSystemEntryDto[]>(dto.StreamId);
+        var signaler = harness.HubStreamStore.GetOrCreate<InternalDtos.FileSystemEntryDto[]>(dto.StreamId, HubStreamExpiration.Listing);
         signaler.Writer.TryWrite([CreateEntry("docs", isDirectory: true)]);
         signaler.Writer.TryWrite([CreateEntry("tmp", isDirectory: true)]);
         signaler.Metadata = true;
