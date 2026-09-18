@@ -178,10 +178,10 @@ public partial class PermissionAssignmentDialog : ComponentBase
   }
 
   /// <summary>
-  /// Builds the grouped dropdown: a family header above each run of matching entries. Headers come
-  /// from <see cref="PermissionGrouping"/>, so a family this build has never seen still gets one.
-  /// MudBlazor swallows anything thrown out of a <see cref="MudAutocomplete{T}.SearchFunc"/> and
-  /// leaves the dropdown empty, so nothing here may escape.
+  /// Builds the grouped dropdown: a category header above each run of matching entries. Each entry
+  /// carries its own header text, so <see cref="PermissionGrouping"/> only has to group. MudBlazor
+  /// swallows anything thrown out of a <see cref="MudAutocomplete{T}.SearchFunc"/> and leaves the
+  /// dropdown empty, so nothing here may escape.
   /// </summary>
   private async Task<IEnumerable<PermissionPickerRow>> SearchPermissionRows(
     string query,
