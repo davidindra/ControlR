@@ -605,7 +605,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
   [Fact]
   public async Task GetDirectoryContents_WhenStreamYieldsChunks_ReturnsFlattenedEntriesAndDirectoryExists()
   {
-    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput, recordHubStreamSessions: true);
     using var scope = testApp.CreateScope();
     var harness = await Harness.CreateAsync(scope, "dfs-contents-success@test.local");
     var deviceIds = new List<Guid>();
@@ -629,6 +629,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
     Assert.Equal([harness.Device.Id], deviceIds);
     Assert.True(response.DirectoryExists);
     Assert.Equal(["a.txt", "b.txt", "c.txt"], response.Items.Select(x => x.Name));
+    AssertListingLifetime(harness);
   }
 
   [Fact]
@@ -1122,7 +1123,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
   [Fact]
   public async Task GetSubdirectories_WhenStreamYieldsChunks_ReturnsFlattenedEntries()
   {
-    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput, recordHubStreamSessions: true);
     using var scope = testApp.CreateScope();
     var harness = await Harness.CreateAsync(scope, "dfs-subdirs-success@test.local");
     var deviceIds = new List<Guid>();
@@ -1148,6 +1149,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
     var response = Assert.IsType<InternalDtos.GetSubdirectoriesResponseDto>(ok.Value);
     Assert.Equal([harness.Device.Id], deviceIds);
     Assert.Equal(["dir-a", "dir-b"], response.Subdirectories.Select(x => x.Name));
+    AssertListingLifetime(harness);
   }
 
   [Fact]
@@ -1285,6 +1287,17 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
     var objectResult = Assert.IsType<ObjectResult>(result);
     Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
     Assert.Equal("An error occurred while validating the file path.", objectResult.Value);
+  }
+
+  /// <summary>
+  /// A listing arrives in one burst once the agent answers, so its session must be created with the
+  /// listing lifetime. The recorder reports only the calls that created a session, so this reads the
+  /// service's argument and not the test's own seed, whose argument the store discards.
+  /// </summary>
+  private static void AssertListingLifetime(Harness harness)
+  {
+    var recorder = Assert.IsType<RecordingHubStreamStore>(harness.HubStreamStore);
+    Assert.Equal([HubStreamExpiration.Listing], recorder.CreatedSessions.Select(x => x.Expiration));
   }
 
   /// <summary>
