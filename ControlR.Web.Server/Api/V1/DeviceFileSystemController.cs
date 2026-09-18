@@ -96,12 +96,12 @@ public class DeviceFileSystemController(
       return InvalidRequest("File path is required.");
     }
 
-    // The agent's delete carries only the path, so the internal request's directory flag has no
-    // counterpart in this contract and nothing downstream reads it.
+    // There is no directory flag on either contract. The agent stats the path and deletes a directory
+    // tree or a file accordingly.
     var outcome = await _deviceFileSystem.DeletePath(
       User,
       deviceId,
-      new InternalDtos.FileDeleteRequestDto(deviceId, request.FilePath, IsDirectory: false),
+      new InternalDtos.FileDeleteRequestDto(deviceId, request.FilePath),
       cancellationToken,
       resolvedTenantId);
 

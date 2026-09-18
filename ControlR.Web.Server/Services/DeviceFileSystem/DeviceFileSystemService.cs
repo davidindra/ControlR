@@ -34,8 +34,8 @@ public interface IDeviceFileSystemService
     Guid? expectedTenantId = null);
 
   /// <summary>
-  /// Asks the agent to delete a path. Only the path is forwarded; the caller's directory flag is
-  /// dropped at this boundary. The agent's answer is reported, as with directory creation.
+  /// Asks the agent to delete a path. Only the path is forwarded. The agent stats it and deletes a
+  /// directory tree or a file accordingly. The agent's answer is reported, as with directory creation.
   /// </summary>
   Task<FileSystemOutcome> DeletePath(
     ClaimsPrincipal user,

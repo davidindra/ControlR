@@ -192,7 +192,7 @@ public partial class FileSystem : JsInteropableComponent
   {
     try
     {
-      var request = new InternalDtos.FileDeleteRequestDto(DeviceId, item.FullPath, item.IsDirectory);
+      var request = new InternalDtos.FileDeleteRequestDto(DeviceId, item.FullPath);
       var result = await ControlrApi.Internal.DeviceFileSystem.DeleteFile(request);
 
       if (!result.IsSuccess)

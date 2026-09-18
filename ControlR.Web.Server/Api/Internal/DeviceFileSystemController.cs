@@ -47,7 +47,7 @@ public class DeviceFileSystemController : ControllerBase
   }
 
   [HttpDelete("delete-path/{deviceId:guid}")]
-  [ApiDeprecated("/api/v1/device-file-system/delete-path/{deviceId}?tenantId={tenantId}", Note = "Use DELETE /api/v1/device-file-system/delete-path/{deviceId} with a required tenantId. The V1 response is the named DevicePathDeletionResponseDto instead of an ad hoc body whose key order depended on an anonymous type, and its request carries no DeviceId or IsDirectory. V1 answers every failure with a ProblemDetails body, where this endpoint answers some of them with bare strings.")]
+  [ApiDeprecated("/api/v1/device-file-system/delete-path/{deviceId}?tenantId={tenantId}", Note = "Use DELETE /api/v1/device-file-system/delete-path/{deviceId} with a required tenantId. The V1 body carries no DeviceId, because the route already names the device. The V1 response is the named DevicePathDeletionResponseDto instead of an ad hoc body whose key order depended on an anonymous type. V1 answers every failure with a ProblemDetails body, where this endpoint answers some of them with bare strings.")]
   public async Task<IActionResult> DeletePath(
     [FromRoute] Guid deviceId,
     [FromBody] InternalDtos.FileDeleteRequestDto request,
