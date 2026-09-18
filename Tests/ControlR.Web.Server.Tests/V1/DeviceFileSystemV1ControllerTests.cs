@@ -45,7 +45,7 @@ namespace ControlR.Web.Server.Tests.V1;
 /// </summary>
 public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
 {
-  private const string DeviceOfflineMessage = "Device is not currently online.";
+  private const string DeviceOfflineMessage = "Device is currently offline.";
   private const string OnlineConnectionId = "test-agent-connection-id";
 
   private readonly ITestOutputHelper _testOutput = testOutput;
@@ -111,10 +111,12 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
 
       using var response = await httpClient.SendAsync(request, TestContext.Current.CancellationToken);
       Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+      Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
 
       var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(
         TestContext.Current.CancellationToken);
-      Assert.Equal("Invalid tenant id.", problem?.Title);
+      Assert.Equal("Invalid request.", problem?.Title);
+      Assert.Equal("tenantId must be a non-empty GUID.", problem?.Detail);
     }
   }
 
@@ -176,7 +178,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new CreateDeviceDirectoryRequestDto("/parent", "new-dir"),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -231,7 +233,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new CreateDeviceDirectoryRequestDto("/parent", "new-dir"),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -334,7 +336,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new DeleteDevicePathRequestDto("/parent/file.txt"),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -389,7 +391,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new DeleteDevicePathRequestDto("/parent/file.txt"),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -489,7 +491,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new DeviceDirectoryContentsRequestDto(Guid.NewGuid(), "/parent"),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -526,7 +528,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new DeviceDirectoryContentsRequestDto(harness.Device.Id, "/parent"),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -556,8 +558,11 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new DeviceDirectoryContentsRequestDto(harness.Device.Id, "/parent"),
       requestCts.Token);
 
-    var timeoutResult = Assert.IsType<StatusCodeResult>(result);
+    var timeoutResult = Assert.IsType<ObjectResult>(result);
     Assert.Equal(StatusCodes.Status408RequestTimeout, timeoutResult.StatusCode);
+    var timeoutProblem = Assert.IsType<ProblemDetails>(timeoutResult.Value);
+    Assert.Equal(StatusCodes.Status408RequestTimeout, timeoutProblem.Status);
+    Assert.Equal("Request timed out.", timeoutProblem.Title);
   }
 
   [Fact]
@@ -661,7 +666,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       harness.Tenant.Id,
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -699,7 +704,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       otherTenant.Id,
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -745,7 +750,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       harness.Tenant.Id,
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -814,7 +819,8 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     var objectResult = Assert.IsType<ObjectResult>(result);
     Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
-    Assert.Equal("The remote device returned an unexpected response.", problem.Title);
+    Assert.Equal("Internal server error.", problem.Title);
+    Assert.Equal("The remote device returned an unexpected response.", problem.Detail);
   }
 
   [Fact]
@@ -878,7 +884,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new DevicePathSegmentsRequestDto(Guid.NewGuid(), "/parent/child"),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -923,7 +929,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new DevicePathSegmentsRequestDto(harness.Device.Id, "/parent/child"),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -1027,7 +1033,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new DeviceRootDrivesRequestDto(Guid.NewGuid()),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -1064,7 +1070,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new DeviceRootDrivesRequestDto(harness.Device.Id),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -1129,7 +1135,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     var objectResult = Assert.IsType<ObjectResult>(result);
     Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
-    Assert.Equal("Error contacting the remote device.", problem.Title);
+    Assert.Equal("Internal server error.", problem.Title);
   }
 
   [Fact]
@@ -1186,7 +1192,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new DeviceSubdirectoriesRequestDto(Guid.NewGuid(), "/parent"),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -1223,7 +1229,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new DeviceSubdirectoriesRequestDto(harness.Device.Id, "/parent"),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -1333,7 +1339,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new ValidateDeviceFilePathRequestDto("/parent", "file.txt"),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -1388,7 +1394,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       new ValidateDeviceFilePathRequestDto("/parent", "file.txt"),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundResult>(result);
+    AssertNotFound(result);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -1489,7 +1495,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     Assert.Equal(StatusCodes.Status409Conflict, objectResult.StatusCode);
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
     Assert.Equal(StatusCodes.Status409Conflict, problem.Status);
-    Assert.Equal("The remote device could not complete the operation.", problem.Title);
+    Assert.Equal("Conflict.", problem.Title);
     return problem;
   }
 
@@ -1502,7 +1508,21 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     Assert.Equal(StatusCodes.Status502BadGateway, objectResult.StatusCode);
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
     Assert.Equal(StatusCodes.Status502BadGateway, problem.Status);
-    Assert.Equal("No response from the remote device.", problem.Title);
+    Assert.Equal("Bad gateway.", problem.Title);
+    return problem;
+  }
+
+  /// <summary>
+  /// No device with that id is visible to the caller. The 404 carries a ProblemDetails body like every
+  /// other V1 failure.
+  /// </summary>
+  private static ProblemDetails AssertNotFound(IActionResult result)
+  {
+    var objectResult = Assert.IsType<ObjectResult>(result);
+    Assert.Equal(StatusCodes.Status404NotFound, objectResult.StatusCode);
+    var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
+    Assert.Equal(StatusCodes.Status404NotFound, problem.Status);
+    Assert.Equal("Not found.", problem.Title);
     return problem;
   }
 

@@ -2,6 +2,7 @@ using Asp.Versioning;
 using ControlR.Libraries.Api.Contracts.Dtos.ServerApi.V1.DeviceFileSystem;
 using ControlR.Web.Server.Services.DeviceFileSystem;
 using Microsoft.AspNetCore.Mvc;
+using ControlR.Web.Server.Constants;
 
 namespace ControlR.Web.Server.Api.V1;
 
@@ -17,8 +18,6 @@ public class DeviceFileSystemController(
   IDeviceFileSystemService deviceFileSystem,
   ILogger<DeviceFileSystemController> logger) : ControllerBase
 {
-  private const string DeviceOfflineMessage = "Device is not currently online.";
-
   private readonly IDeviceFileSystemService _deviceFileSystem = deviceFileSystem;
 
   private readonly ILogger<DeviceFileSystemController> _logger = logger;
@@ -29,13 +28,14 @@ public class DeviceFileSystemController(
   /// </summary>
   [HttpPost("create-directory/{deviceId:guid}")]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status408RequestTimeout, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway, "application/problem+json")]
   public async Task<IActionResult> CreateDirectory(
     [FromRoute] Guid deviceId,
     [FromQuery] Guid tenantId,
@@ -72,13 +72,14 @@ public class DeviceFileSystemController(
   /// </summary>
   [HttpDelete("delete-path/{deviceId:guid}")]
   [ProducesResponseType<DevicePathDeletionResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status408RequestTimeout, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway, "application/problem+json")]
   public async Task<IActionResult> DeletePath(
     [FromRoute] Guid deviceId,
     [FromQuery] Guid tenantId,
@@ -117,14 +118,14 @@ public class DeviceFileSystemController(
   /// </summary>
   [HttpPost("contents")]
   [ProducesResponseType<DeviceDirectoryContentsResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(StatusCodes.Status408RequestTimeout)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status408RequestTimeout, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway, "application/problem+json")]
   public async Task<IActionResult> GetDirectoryContents(
     [FromQuery] Guid tenantId,
     [FromBody] DeviceDirectoryContentsRequestDto request,
@@ -155,13 +156,14 @@ public class DeviceFileSystemController(
   /// </summary>
   [HttpGet("logs/{deviceId:guid}")]
   [ProducesResponseType<DeviceLogFileListResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status408RequestTimeout, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway, "application/problem+json")]
   public async Task<IActionResult> GetLogFiles(
     [FromRoute] Guid deviceId,
     [FromQuery] Guid tenantId,
@@ -192,13 +194,14 @@ public class DeviceFileSystemController(
   /// </summary>
   [HttpPost("path-segments")]
   [ProducesResponseType<DevicePathSegmentsResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status408RequestTimeout, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway, "application/problem+json")]
   public async Task<IActionResult> GetPathSegments(
     [FromQuery] Guid tenantId,
     [FromBody] DevicePathSegmentsRequestDto request,
@@ -228,13 +231,14 @@ public class DeviceFileSystemController(
   /// </summary>
   [HttpPost("root-drives")]
   [ProducesResponseType<DeviceRootDrivesResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status408RequestTimeout, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway, "application/problem+json")]
   public async Task<IActionResult> GetRootDrives(
     [FromQuery] Guid tenantId,
     [FromBody] DeviceRootDrivesRequestDto request,
@@ -264,14 +268,14 @@ public class DeviceFileSystemController(
   /// </summary>
   [HttpPost("subdirectories")]
   [ProducesResponseType<DeviceSubdirectoriesResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(StatusCodes.Status408RequestTimeout)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status408RequestTimeout, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway, "application/problem+json")]
   public async Task<IActionResult> GetSubdirectories(
     [FromQuery] Guid tenantId,
     [FromBody] DeviceSubdirectoriesRequestDto request,
@@ -302,13 +306,14 @@ public class DeviceFileSystemController(
   /// </summary>
   [HttpPost("validate-path/{deviceId:guid}")]
   [ProducesResponseType<DeviceFilePathValidationResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status408RequestTimeout, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway, "application/problem+json")]
   public async Task<IActionResult> ValidateFilePath(
     [FromRoute] Guid deviceId,
     [FromQuery] Guid tenantId,
@@ -415,52 +420,57 @@ public class DeviceFileSystemController(
     return Problem(
       detail: detail,
       statusCode: StatusCodes.Status400BadRequest,
-      title: "Invalid request.");
+      title: V1ProblemTitles.InvalidRequest);
   }
 
   /// <summary>
   /// The one place the eight operations translate an outcome's condition into a status.
   /// </summary>
-  private IActionResult MapFailure<TValue>(
-    FileSystemOutcome<TValue> outcome,
+  private IActionResult MapFailure(
+    FileSystemOutcome outcome,
     string unexpectedFailureDetail)
   {
     if (outcome.Failure is FileSystemFailure.None)
     {
-      // Reported success but carried no payload, which no operation produces today. Reaching here is a
-      // bug in this server rather than a device fault, so the title says unexpected response and does
-      // not claim the device could not be contacted.
+      // Reported success but carried no payload, which none of the payload-carrying operations do.
+      // Reaching here is a bug in this server rather than a device fault, so the detail says
+      // unexpected response and does not claim the device could not be contacted.
       _logger.LogError(
         "A device file system operation reported success without a payload ({Outcome}).",
         outcome);
 
       return Problem(
-        detail: unexpectedFailureDetail,
+        detail: "The remote device returned an unexpected response.",
         statusCode: StatusCodes.Status500InternalServerError,
-        title: "The remote device returned an unexpected response.");
+        title: V1ProblemTitles.InternalServerError);
     }
 
     return outcome.Failure switch
     {
-      FileSystemFailure.DeviceNotFound => NotFound(),
+      FileSystemFailure.DeviceNotFound => Problem(
+        statusCode: StatusCodes.Status404NotFound,
+        title: V1ProblemTitles.NotFound),
       FileSystemFailure.Forbidden => Forbid(),
       FileSystemFailure.DeviceOffline => Problem(
-        detail: DeviceOfflineMessage,
+        detail: "Device is currently offline.",
         statusCode: StatusCodes.Status409Conflict,
-        title: "The device is not currently online."),
-      FileSystemFailure.HubRejected when outcome.Reason is { Length: > 0 } reason => Problem(
-        detail: reason,
+        title: V1ProblemTitles.Conflict),
+      FileSystemFailure.RemoteFailure => Problem(
+        detail: outcome.Reason,
         statusCode: StatusCodes.Status409Conflict,
-        title: "The remote device could not complete the operation."),
-      FileSystemFailure.HubRejected => Problem(
+        title: V1ProblemTitles.Conflict),
+      FileSystemFailure.NoResponse => Problem(
         detail: "The device did not return a result.",
         statusCode: StatusCodes.Status502BadGateway,
-        title: "No response from the remote device."),
-      FileSystemFailure.Cancelled => StatusCode(StatusCodes.Status408RequestTimeout),
+        title: V1ProblemTitles.BadGateway),
+      FileSystemFailure.Cancelled => Problem(
+        detail: "The wait for the remote device was canceled.",
+        statusCode: StatusCodes.Status408RequestTimeout,
+        title: V1ProblemTitles.RequestTimedOut),
       FileSystemFailure.Unexpected => Problem(
         detail: unexpectedFailureDetail,
         statusCode: StatusCodes.Status500InternalServerError,
-        title: "Error contacting the remote device."),
+        title: V1ProblemTitles.InternalServerError),
       _ => throw new ArgumentOutOfRangeException(
         nameof(outcome),
         outcome.Failure,

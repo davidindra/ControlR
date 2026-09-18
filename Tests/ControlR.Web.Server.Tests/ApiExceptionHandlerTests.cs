@@ -36,8 +36,8 @@ public class ApiExceptionHandlerTests
 
     Assert.NotNull(problem);
     Assert.Equal(500, problem.Status);
-    Assert.Equal("An unexpected error occurred.", problem.Title);
-    Assert.Equal("https://tools.ietf.org/html/rfc9110#section-15.6.1", problem.Type);
+    Assert.Equal("Internal server error.", problem.Title);
+    Assert.Equal("about:blank", problem.Type);
     Assert.Equal("An unexpected error occurred.", problem.Detail);
     Assert.NotNull(problem.Extensions);
     Assert.True(problem.Extensions.ContainsKey("traceId"));

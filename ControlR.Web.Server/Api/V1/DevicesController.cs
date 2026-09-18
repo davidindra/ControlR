@@ -10,6 +10,7 @@ using ControlR.Web.Server.Services.DeviceManagement;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using ControlR.Libraries.Api.Contracts.Dtos.ServerApi.V1;
+using ControlR.Web.Server.Constants;
 
 namespace ControlR.Web.Server.Api.V1;
 
@@ -23,7 +24,7 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
 
   [HttpDelete("{deviceId:guid}")]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> DeleteDevice(
     [FromServices] AppDb appDb,
     [FromServices] IAuthorizationService authorizationService,
@@ -61,7 +62,10 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
   {
     if (requestDto.DeviceIds.Count > DtoLimits.DeviceIdsMaxCount)
     {
-      return BadRequest($"Too many device IDs. Maximum allowed is {DtoLimits.DeviceIdsMaxCount}.");
+      return Problem(
+        detail: $"Too many device IDs. Maximum allowed is {DtoLimits.DeviceIdsMaxCount}.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var candidateDevices = await appDb.Devices
@@ -145,8 +149,11 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
 
   [HttpGet("{deviceId:guid}/desktop-sessions")]
   [ProducesResponseType<V1Dtos.DesktopSessionsResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(StatusCodes.Status409Conflict)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
   public async Task<ActionResult<V1Dtos.DesktopSessionsResponseDto>> GetDesktopSessions(
     [FromRoute] Guid deviceId,
     [FromServices] AppDb appDb,
@@ -178,7 +185,10 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
 
     if (!device.IsOnline || string.IsNullOrWhiteSpace(device.ConnectionId))
     {
-      return Conflict("Device is currently offline.");
+      return Problem(
+        detail: "Device is currently offline.",
+        statusCode: StatusCodes.Status409Conflict,
+        title: V1ProblemTitles.Conflict);
     }
 
     try
@@ -206,13 +216,13 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
       return Problem(
         detail: "Failed to retrieve desktop sessions from the agent.",
         statusCode: StatusCodes.Status500InternalServerError,
-        title: "Agent communication failed");
+        title: V1ProblemTitles.InternalServerError);
     }
   }
 
   [HttpGet("{deviceId:guid}")]
   [ProducesResponseType<DeviceResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<DeviceResponseDto>> GetDevice(
     [FromServices] AppDb appDb,
     [FromServices] IAgentVersionProvider agentVersionProvider,
@@ -321,8 +331,8 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
 
   [HttpPatch("{deviceId:guid}/alias")]
   [ProducesResponseType<DeviceResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<DeviceResponseDto>> UpdateDeviceAlias(
     [FromRoute] Guid deviceId,
     [FromBody] V1Dtos.UpdateDeviceAliasRequestDto requestDto,
@@ -334,12 +344,18 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
   {
     if (deviceId != requestDto.DeviceId)
     {
-      return BadRequest("Device ID mismatch.");
+      return Problem(
+        detail: "Device ID mismatch.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     if (requestDto.Alias is not null && requestDto.Alias.Length > 100)
     {
-      return BadRequest("Alias must be 100 characters or fewer.");
+      return Problem(
+        detail: "Alias must be 100 characters or fewer.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var device = await appDb.Devices.FirstOrDefaultAsync(x => x.Id == deviceId, cancellationToken);

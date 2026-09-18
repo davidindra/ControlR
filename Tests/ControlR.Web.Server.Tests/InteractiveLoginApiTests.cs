@@ -282,6 +282,17 @@ public class InteractiveLoginApiTests(ITestOutputHelper testOutput)
     Assert.Equal(HttpStatusCode.TooManyRequests, lastResponse.StatusCode);
     Assert.True(lastResponse.Headers.TryGetValues("Retry-After", out var retryAfterValues));
     Assert.False(string.IsNullOrWhiteSpace(retryAfterValues.Single()));
+
+    // The limiter sets the status and Retry-After and writes no body, so the pipeline supplies one.
+    // 429 is in the title table, so it is titled like every other /api failure.
+    Assert.Equal("application/problem+json", lastResponse.Content.Headers.ContentType?.MediaType);
+
+    var problem = await lastResponse.Content.ReadFromJsonAsync<ProblemDetails>(
+      TestContext.Current.CancellationToken);
+    Assert.NotNull(problem);
+    Assert.Equal(StatusCodes.Status429TooManyRequests, problem.Status);
+    Assert.Equal("Too many requests.", problem.Title);
+    Assert.Equal("about:blank", problem.Type);
   }
 
   [Fact]

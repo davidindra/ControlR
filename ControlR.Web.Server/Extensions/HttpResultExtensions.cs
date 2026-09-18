@@ -1,3 +1,4 @@
+using ControlR.Web.Server.Constants;
 using ControlR.Web.Server.Primitives;
 using Microsoft.AspNetCore.Mvc;
 
@@ -49,25 +50,31 @@ public static class HttpResultExtensions
 
   private static ObjectResult CreateProblemResult(HttpResult result)
   {
-    var (statusCode, title) = result.ErrorCode switch
+    var statusCode = result.ErrorCode switch
     {
-      HttpResultErrorCode.BadRequest => (StatusCodes.Status400BadRequest, "Bad Request"),
-      HttpResultErrorCode.Conflict => (StatusCodes.Status409Conflict, "Conflict"),
-      HttpResultErrorCode.Forbidden => (StatusCodes.Status403Forbidden, "Forbidden"),
-      HttpResultErrorCode.NotFound => (StatusCodes.Status404NotFound, "Not Found"),
-      HttpResultErrorCode.Unauthorized => (StatusCodes.Status401Unauthorized, "Unauthorized"),
-      HttpResultErrorCode.ValidationFailed => (StatusCodes.Status400BadRequest, "Validation Failed"),
-      HttpResultErrorCode.NotImplemented => (StatusCodes.Status501NotImplemented, "Not Implemented"),
-      HttpResultErrorCode.ServiceUnavailable => (StatusCodes.Status503ServiceUnavailable, "Service Unavailable"),
-      _ => (StatusCodes.Status500InternalServerError, "Internal Server Error")
+      HttpResultErrorCode.BadRequest => StatusCodes.Status400BadRequest,
+      HttpResultErrorCode.Conflict => StatusCodes.Status409Conflict,
+      HttpResultErrorCode.Forbidden => StatusCodes.Status403Forbidden,
+      HttpResultErrorCode.NotFound => StatusCodes.Status404NotFound,
+      HttpResultErrorCode.Unauthorized => StatusCodes.Status401Unauthorized,
+      HttpResultErrorCode.ValidationFailed => StatusCodes.Status400BadRequest,
+      HttpResultErrorCode.NotImplemented => StatusCodes.Status501NotImplemented,
+      HttpResultErrorCode.ServiceUnavailable => StatusCodes.Status503ServiceUnavailable,
+      _ => StatusCodes.Status500InternalServerError
     };
+
+    // A validation failure carries its own title. The manager that reported it knows what went wrong,
+    // and a caller should not have to read the detail to tell a rejected value from a malformed request.
+    var title = result.ErrorCode == HttpResultErrorCode.ValidationFailed
+      ? V1ProblemTitles.ValidationFailed
+      : V1ProblemTitles.ForStatusCode(statusCode);
 
     var problem = new ProblemDetails
     {
       Status = statusCode,
       Title = title,
       Detail = result.Reason,
-      Type = GetProblemType(statusCode),
+      Type = V1ProblemTitles.ProblemType,
     };
 
     if (result.Extensions is { Count: > 0 })
@@ -83,17 +90,4 @@ public static class HttpResultExtensions
       StatusCode = statusCode,
     };
   }
-
-  private static string GetProblemType(int statusCode) => statusCode switch
-  {
-    StatusCodes.Status400BadRequest => "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-    StatusCodes.Status401Unauthorized => "https://tools.ietf.org/html/rfc9110#section-15.5.2",
-    StatusCodes.Status403Forbidden => "https://tools.ietf.org/html/rfc9110#section-15.5.3",
-    StatusCodes.Status404NotFound => "https://tools.ietf.org/html/rfc9110#section-15.5.4",
-    StatusCodes.Status409Conflict => "https://tools.ietf.org/html/rfc9110#section-15.5.10",
-    StatusCodes.Status500InternalServerError => "https://tools.ietf.org/html/rfc9110#section-15.6.1",
-    StatusCodes.Status501NotImplemented => "https://tools.ietf.org/html/rfc9110#section-15.6.2",
-    StatusCodes.Status503ServiceUnavailable => "https://tools.ietf.org/html/rfc9110#section-15.6.4",
-    _ => "https://tools.ietf.org/html/rfc9110#section-15.6.1"
-  };
 }

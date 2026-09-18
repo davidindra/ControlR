@@ -6,6 +6,7 @@ using ControlR.Web.Server.Services.Authorization;
 using ControlR.Web.Server.Services.Users;
 using ControlR.Web.Server.Tests.Helpers;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -142,7 +143,11 @@ public class UsersV1ControllerTests(ITestOutputHelper testOutput)
       new CreateUserRequestDto("nouser", "nouser@t.local", "P@ssw0rd!", ["Nonexistent Preset"]),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<BadRequestObjectResult>(result.Result);
+    ProblemDetailsAsserts.AssertProblem(
+      result.Result,
+      StatusCodes.Status400BadRequest,
+      "Invalid request.",
+      "Presets not found: Nonexistent Preset");
   }
 
   [Fact]
@@ -191,7 +196,11 @@ public class UsersV1ControllerTests(ITestOutputHelper testOutput)
       tenant.Id,
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<BadRequestObjectResult>(result);
+    ProblemDetailsAsserts.AssertProblem(
+      result,
+      StatusCodes.Status400BadRequest,
+      "Invalid request.",
+      "You cannot delete your own account. Use the identity-management pages instead.");
   }
 
   [Fact]

@@ -19,9 +19,10 @@ public class ServerServiceAccountsController(
   [HttpPost("{serviceAccountId:guid}/credentials")]
   [Authorize(Policy = PolicyNames.RequireServerServiceAccountsRotateCredentials)]
   [ProducesResponseType<CreateServiceAccountCredentialResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(StatusCodes.Status409Conflict)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
   public async Task<ActionResult<CreateServiceAccountCredentialResponseDto>> AddCredential(
     Guid serviceAccountId,
     [FromBody] CreateServiceAccountCredentialRequestDto request,
@@ -44,9 +45,10 @@ public class ServerServiceAccountsController(
   [HttpPost]
   [Authorize(Policy = PolicyNames.RequireServerServiceAccountsWrite)]
   [ProducesResponseType<ServerServiceAccountDto>(StatusCodes.Status201Created)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status409Conflict)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
   public async Task<ActionResult<ServerServiceAccountDto>> Create(
     [FromBody] CreateServerServiceAccountRequestDto request,
     [FromServices] IPermissionEvaluator permissionEvaluator,
@@ -85,9 +87,9 @@ public class ServerServiceAccountsController(
   [HttpDelete("{serviceAccountId:guid}")]
   [Authorize(Policy = PolicyNames.RequireServerServiceAccountsWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> Delete(
     Guid serviceAccountId,
     CancellationToken cancellationToken)
@@ -109,7 +111,7 @@ public class ServerServiceAccountsController(
   [HttpGet("{serviceAccountId:guid}")]
   [Authorize(Policy = PolicyNames.RequireServerServiceAccountsRead)]
   [ProducesResponseType<ServerServiceAccountDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<ServerServiceAccountDto>> Get(
     Guid serviceAccountId,
     CancellationToken cancellationToken)
@@ -138,8 +140,9 @@ public class ServerServiceAccountsController(
   [HttpDelete("{serviceAccountId:guid}/credentials/{credentialId:guid}/purge")]
   [Authorize(Policy = PolicyNames.RequireServerServiceAccountsRotateCredentials)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> PurgeCredential(
     Guid serviceAccountId,
     Guid credentialId,
@@ -162,7 +165,8 @@ public class ServerServiceAccountsController(
   [HttpDelete("{serviceAccountId:guid}/credentials/{credentialId:guid}")]
   [Authorize(Policy = PolicyNames.RequireServerServiceAccountsRotateCredentials)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> RevokeCredential(
     Guid serviceAccountId,
     Guid credentialId,
@@ -185,8 +189,9 @@ public class ServerServiceAccountsController(
   [HttpPut("{serviceAccountId:guid}")]
   [Authorize(Policy = PolicyNames.RequireServerServiceAccountsWrite)]
   [ProducesResponseType<ServerServiceAccountDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<ServerServiceAccountDto>> Update(
     Guid serviceAccountId,
     [FromBody] UpdateServiceAccountRequestDto request,

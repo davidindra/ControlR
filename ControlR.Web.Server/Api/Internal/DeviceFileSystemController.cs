@@ -1,6 +1,7 @@
 using ControlR.Libraries.Api.Contracts.Dtos.HubDtos;
 using ControlR.Libraries.Api.Contracts.Hubs.Clients;
 using ControlR.Libraries.Shared.Helpers;
+using ControlR.Web.Server.Constants;
 using ControlR.Web.Server.Services.DeviceFileSystem;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
@@ -15,10 +16,11 @@ namespace ControlR.Web.Server.Api.Internal;
 [EndpointGroupName(OpenApiConstants.InternalGroupName)]
 public class DeviceFileSystemController : ControllerBase
 {
-  private const string DeviceOfflineMessage = "Device is not currently online.";
+  private const string DeviceOfflineMessage = "Device is currently offline.";
+  private const string NoResponseMessage = "No response received from device agent.";
 
   [HttpPost("create-directory/{deviceId:guid}")]
-  [ApiDeprecated("/api/v1/device-file-system/create-directory/{deviceId}?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/create-directory/{deviceId} with a required tenantId. The V1 body carries no DeviceId, because the route already names the device. V1 answers an unknown device with 404, an offline device with 409, and 409 carrying the agent's own text when the device answers with a refusal, instead of answering 204 whatever the agent said.")]
+  [ApiDeprecated("/api/v1/device-file-system/create-directory/{deviceId}?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/create-directory/{deviceId} with a required tenantId. The V1 body carries no DeviceId, because the route already names the device. V1 answers every failure with a ProblemDetails body, where this endpoint answers some of them with bare strings.")]
   public async Task<IActionResult> CreateDirectory(
     [FromRoute] Guid deviceId,
     [FromBody] InternalDtos.CreateDirectoryRequestDto request,
@@ -32,21 +34,20 @@ public class DeviceFileSystemController : ControllerBase
 
     var outcome = await deviceFileSystem.CreateDirectory(User, deviceId, request, cancellationToken);
 
-    // This endpoint has answered 204 as soon as the request reached the agent, whether or not the
-    // agent accepted it. The rejection the service reports is left unused here deliberately. Making
-    // it mean something is a behavior change that does not belong in an extraction.
     return outcome.Failure switch
     {
       FileSystemFailure.DeviceNotFound => NotFound(),
       FileSystemFailure.Forbidden => Forbid(),
       FileSystemFailure.DeviceOffline => Conflict(DeviceOfflineMessage),
+      FileSystemFailure.RemoteFailure => RemoteFailureProblem(outcome.Reason),
+      FileSystemFailure.NoResponse => NoResponseProblem(),
       FileSystemFailure.Cancelled or FileSystemFailure.Unexpected => StatusCode(500, "An error occurred during directory creation."),
       _ => NoContent(),
     };
   }
 
   [HttpDelete("delete-path/{deviceId:guid}")]
-  [ApiDeprecated("/api/v1/device-file-system/delete-path/{deviceId}?tenantId={tenantId}", Note = "Use DELETE /api/v1/device-file-system/delete-path/{deviceId} with a required tenantId. The V1 response is the named DevicePathDeletionResponseDto instead of an ad hoc body whose key order depended on an anonymous type, and its request carries no DeviceId or IsDirectory. V1 answers an unknown device with 404, an offline device with 409, and 409 carrying the agent's own text when the device answers with a refusal.")]
+  [ApiDeprecated("/api/v1/device-file-system/delete-path/{deviceId}?tenantId={tenantId}", Note = "Use DELETE /api/v1/device-file-system/delete-path/{deviceId} with a required tenantId. The V1 response is the named DevicePathDeletionResponseDto instead of an ad hoc body whose key order depended on an anonymous type, and its request carries no DeviceId or IsDirectory. V1 answers every failure with a ProblemDetails body, where this endpoint answers some of them with bare strings.")]
   public async Task<IActionResult> DeletePath(
     [FromRoute] Guid deviceId,
     [FromBody] InternalDtos.FileDeleteRequestDto request,
@@ -60,14 +61,14 @@ public class DeviceFileSystemController : ControllerBase
 
     var outcome = await deviceFileSystem.DeletePath(User, deviceId, request, cancellationToken);
 
-    // As with directory creation, the agent's verdict is discarded. What this endpoint reports is the
-    // deletion it requested. The payload is an anonymous type, so its property order is the response
-    // body's key order.
+    // The payload is an anonymous type, so its property order is the response body's key order.
     return outcome.Failure switch
     {
       FileSystemFailure.DeviceNotFound => NotFound(),
       FileSystemFailure.Forbidden => Forbid(),
       FileSystemFailure.DeviceOffline => Conflict(DeviceOfflineMessage),
+      FileSystemFailure.RemoteFailure => RemoteFailureProblem(outcome.Reason),
+      FileSystemFailure.NoResponse => NoResponseProblem(),
       FileSystemFailure.Cancelled or FileSystemFailure.Unexpected => StatusCode(500, "An error occurred during file deletion."),
       _ => Ok(new { Message = "File deletion completed", request.FilePath }),
     };
@@ -157,7 +158,7 @@ public class DeviceFileSystemController : ControllerBase
     if (!device.IsOnline)
     {
       logger.LogWarning("Device {DeviceId} is not online.", deviceId);
-      return Conflict("Device is not currently online.");
+      return Conflict(DeviceOfflineMessage);
     }
 
     var streamId = Guid.NewGuid();
@@ -216,7 +217,7 @@ public class DeviceFileSystemController : ControllerBase
   }
 
   [HttpPost("contents")]
-  [ApiDeprecated("/api/v1/device-file-system/contents?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/contents with a required tenantId. The response is the same listing under the V1 type names. V1 answers an unknown device with 404, an offline device with 409, a canceled wait with 408, and 409 carrying the agent's own text when the device answers with a refusal, instead of a 400 carrying the reason as a bare string.")]
+  [ApiDeprecated("/api/v1/device-file-system/contents?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/contents with a required tenantId. The response is the same listing under the V1 type names. V1 answers every failure with a ProblemDetails body, where this endpoint answers some of them with bare strings.")]
   public async Task<IActionResult> GetDirectoryContents(
     [FromBody] InternalDtos.GetDirectoryContentsRequestDto request,
     [FromServices] IDeviceFileSystemService deviceFileSystem,
@@ -229,7 +230,8 @@ public class DeviceFileSystemController : ControllerBase
       FileSystemFailure.DeviceNotFound => NotFound(),
       FileSystemFailure.Forbidden => Forbid(),
       FileSystemFailure.DeviceOffline => Conflict(DeviceOfflineMessage),
-      FileSystemFailure.HubRejected => BadRequest(outcome.Reason),
+      FileSystemFailure.RemoteFailure => RemoteFailureProblem(outcome.Reason),
+      FileSystemFailure.NoResponse => NoResponseProblem(),
       FileSystemFailure.Cancelled => StatusCode(StatusCodes.Status408RequestTimeout),
       FileSystemFailure.Unexpected => StatusCode(500, "An error occurred while retrieving directory contents."),
       _ => Ok(outcome.Value),
@@ -278,7 +280,7 @@ public class DeviceFileSystemController : ControllerBase
     if (!device.IsOnline)
     {
       logger.LogWarning("Device {DeviceId} is not online.", deviceId);
-      return Conflict("Device is not currently online.");
+      return Conflict(DeviceOfflineMessage);
     }
 
     var streamId = Guid.NewGuid();
@@ -300,7 +302,7 @@ public class DeviceFileSystemController : ControllerBase
         return Problem(
           detail: streamResult.Reason,
           statusCode: StatusCodes.Status500InternalServerError,
-          title: "A failure occurred on the remote device.");
+          title: V1ProblemTitles.InternalServerError);
       }
 
       var fileName = Path.GetFileName(filePath);
@@ -331,7 +333,7 @@ public class DeviceFileSystemController : ControllerBase
   }
 
   [HttpGet("logs/{deviceId:guid}")]
-  [ApiDeprecated("/api/v1/device-file-system/logs/{deviceId}?tenantId={tenantId}", Note = "Use GET /api/v1/device-file-system/logs/{deviceId} with a required tenantId. The response is the same grouping under the V1 type names. V1 answers an unknown device with 404, an offline device with 409, and 409 carrying the agent's own text when the device answers with a refusal, instead of a 500.")]
+  [ApiDeprecated("/api/v1/device-file-system/logs/{deviceId}?tenantId={tenantId}", Note = "Use GET /api/v1/device-file-system/logs/{deviceId} with a required tenantId. The response is the same grouping under the V1 type names. V1 answers every failure with a ProblemDetails body, where this endpoint answers some of them with bare strings.")]
   public async Task<IActionResult> GetLogFiles(
     [FromRoute] Guid deviceId,
     [FromServices] IDeviceFileSystemService deviceFileSystem,
@@ -344,20 +346,18 @@ public class DeviceFileSystemController : ControllerBase
       FileSystemFailure.DeviceNotFound => NotFound(),
       FileSystemFailure.Forbidden => Forbid(),
       FileSystemFailure.DeviceOffline => Conflict(DeviceOfflineMessage),
-      FileSystemFailure.HubRejected => Problem(
-        detail: outcome.Reason,
-        statusCode: StatusCodes.Status500InternalServerError,
-        title: "A failure occurred on the remote device."),
+      FileSystemFailure.RemoteFailure => RemoteFailureProblem(outcome.Reason),
+      FileSystemFailure.NoResponse => NoResponseProblem(),
       FileSystemFailure.Cancelled or FileSystemFailure.Unexpected => Problem(
         detail: "An error occurred while retrieving log files.",
         statusCode: StatusCodes.Status500InternalServerError,
-        title: "Error retrieving log files."),
+        title: V1ProblemTitles.InternalServerError),
       _ => Ok(outcome.Value),
     };
   }
 
   [HttpPost("path-segments")]
-  [ApiDeprecated("/api/v1/device-file-system/path-segments?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/path-segments with a required tenantId. The response is the same answer under the V1 type names. V1 answers an unknown device with 404 rather than this endpoint's 400, an offline device with 409, and 502 when no answer arrived, instead of a 500.")]
+  [ApiDeprecated("/api/v1/device-file-system/path-segments?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/path-segments with a required tenantId. The response is the same answer under the V1 type names. V1 answers an unknown device with 404 rather than this endpoint's 400, and answers every failure with a ProblemDetails body, where this endpoint answers some of them with bare strings.")]
   public async Task<IActionResult> GetPathSegments(
     [FromBody] InternalDtos.GetPathSegmentsRequestDto request,
     [FromServices] IDeviceFileSystemService deviceFileSystem,
@@ -365,22 +365,22 @@ public class DeviceFileSystemController : ControllerBase
   {
     var outcome = await deviceFileSystem.GetPathSegments(User, request, cancellationToken);
 
-    // Of the eight endpoints, this is the only one that answers a missing device with 400, the only
-    // one that leaves a rejected authorization unlogged, and the only one that distinguishes an agent
-    // that never answered from an agent that answered with a rejection.
+    // Of the eight endpoints, this is the only one that answers a missing device with 400 and the only
+    // one that leaves a rejected authorization unlogged. The agent's reply is the answer itself, so
+    // there is no remote failure to report here beyond the agent never answering.
     return outcome.Failure switch
     {
       FileSystemFailure.DeviceNotFound => BadRequest("Device not found."),
       FileSystemFailure.Forbidden => Forbid(),
       FileSystemFailure.DeviceOffline => Conflict(DeviceOfflineMessage),
-      FileSystemFailure.HubRejected => StatusCode(500, "No response received from device agent."),
+      FileSystemFailure.NoResponse => NoResponseProblem(),
       FileSystemFailure.Cancelled or FileSystemFailure.Unexpected => StatusCode(500, "An error occurred while getting path segments."),
       _ => Ok(outcome.Value),
     };
   }
 
   [HttpPost("root-drives")]
-  [ApiDeprecated("/api/v1/device-file-system/root-drives?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/root-drives with a required tenantId. The response is the same listing under the V1 type names. V1 answers an unknown device with 404, an offline device with 409, and 409 carrying the agent's own text when the device answers with a refusal, instead of a 400 carrying the reason as a bare string.")]
+  [ApiDeprecated("/api/v1/device-file-system/root-drives?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/root-drives with a required tenantId. The response is the same listing under the V1 type names. V1 answers every failure with a ProblemDetails body, where this endpoint answers some of them with bare strings.")]
   public async Task<IActionResult> GetRootDrives(
     [FromBody] InternalDtos.GetRootDrivesRequestDto request,
     [FromServices] IDeviceFileSystemService deviceFileSystem,
@@ -393,14 +393,15 @@ public class DeviceFileSystemController : ControllerBase
       FileSystemFailure.DeviceNotFound => NotFound(),
       FileSystemFailure.Forbidden => Forbid(),
       FileSystemFailure.DeviceOffline => Conflict(DeviceOfflineMessage),
-      FileSystemFailure.HubRejected => BadRequest(outcome.Reason),
+      FileSystemFailure.RemoteFailure => RemoteFailureProblem(outcome.Reason),
+      FileSystemFailure.NoResponse => NoResponseProblem(),
       FileSystemFailure.Cancelled or FileSystemFailure.Unexpected => StatusCode(500, "An error occurred while retrieving root drives."),
       _ => Ok(outcome.Value),
     };
   }
 
   [HttpPost("subdirectories")]
-  [ApiDeprecated("/api/v1/device-file-system/subdirectories?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/subdirectories with a required tenantId. The response is the same listing under the V1 type names, and still carries no directory-exists signal. V1 answers an unknown device with 404, an offline device with 409, a canceled wait with 408, and 409 carrying the agent's own text when the device answers with a refusal, instead of a 400 carrying the reason as a bare string.")]
+  [ApiDeprecated("/api/v1/device-file-system/subdirectories?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/subdirectories with a required tenantId. The response is the same listing under the V1 type names, and still carries no directory-exists signal. V1 answers every failure with a ProblemDetails body, where this endpoint answers some of them with bare strings.")]
   public async Task<IActionResult> GetSubdirectories(
     [FromBody] InternalDtos.GetSubdirectoriesRequestDto request,
     [FromServices] IDeviceFileSystemService deviceFileSystem,
@@ -415,7 +416,8 @@ public class DeviceFileSystemController : ControllerBase
       FileSystemFailure.DeviceNotFound => NotFound(),
       FileSystemFailure.Forbidden => Forbid(),
       FileSystemFailure.DeviceOffline => Conflict(DeviceOfflineMessage),
-      FileSystemFailure.HubRejected => BadRequest(outcome.Reason),
+      FileSystemFailure.RemoteFailure => RemoteFailureProblem(outcome.Reason),
+      FileSystemFailure.NoResponse => NoResponseProblem(),
       FileSystemFailure.Cancelled => StatusCode(StatusCodes.Status408RequestTimeout),
       FileSystemFailure.Unexpected => StatusCode(500, "An error occurred while retrieving subdirectories."),
       _ => Ok(outcome.Value),
@@ -468,7 +470,7 @@ public class DeviceFileSystemController : ControllerBase
     if (!device.IsOnline)
     {
       logger.LogWarning("Device {DeviceId} is not online.", deviceId);
-      return Conflict("Device is not currently online.");
+      return Conflict(DeviceOfflineMessage);
     }
 
     if (!Request.HasFormContentType)
@@ -539,7 +541,7 @@ public class DeviceFileSystemController : ControllerBase
   }
 
   [HttpPost("validate-path/{deviceId:guid}")]
-  [ApiDeprecated("/api/v1/device-file-system/validate-path/{deviceId}?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/validate-path/{deviceId} with a required tenantId. The V1 body carries no DeviceId, because the route already names the device. The answer is the same, including an answer that the path is invalid. V1 answers an unknown device with 404, an offline device with 409, and 502 when no answer arrived.")]
+  [ApiDeprecated("/api/v1/device-file-system/validate-path/{deviceId}?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/validate-path/{deviceId} with a required tenantId. The V1 body carries no DeviceId, because the route already names the device. The answer is the same, including an answer that the path is invalid. V1 answers every failure with a ProblemDetails body, where this endpoint answers some of them with bare strings.")]
   public async Task<IActionResult> ValidateFilePath(
     [FromRoute] Guid deviceId,
     [FromBody] InternalDtos.ValidateFilePathRequestDto request,
@@ -553,16 +555,19 @@ public class DeviceFileSystemController : ControllerBase
 
     var outcome = await deviceFileSystem.ValidateFilePath(User, deviceId, request, cancellationToken);
 
-    // The agent's answer is returned whole, including an answer that the path is invalid. This
-    // endpoint has no separate rejection to report, but the service reports a reasonless rejection
-    // when the agent never answered. This endpoint has always answered that case with a 500, so the
-    // reasonless rejection joins the 500 arm rather than falling through to the success arm.
+    // The agent's answer is returned whole, including an answer that the path is invalid. The only
+    // agent-side condition to report is that it never answered at all.
     return outcome.Failure switch
     {
       FileSystemFailure.DeviceNotFound => NotFound(),
       FileSystemFailure.Forbidden => Forbid(),
       FileSystemFailure.DeviceOffline => Conflict(DeviceOfflineMessage),
-      FileSystemFailure.Cancelled or FileSystemFailure.HubRejected or FileSystemFailure.Unexpected =>
+      FileSystemFailure.NoResponse => NoResponseProblem(),
+      FileSystemFailure.Cancelled => Problem(
+        detail: "The wait for the remote device was canceled.",
+        statusCode: StatusCodes.Status408RequestTimeout,
+        title: V1ProblemTitles.RequestTimedOut),
+      FileSystemFailure.Unexpected =>
         StatusCode(500, "An error occurred while validating the file path."),
       _ => Ok(outcome.Value),
     };
@@ -615,7 +620,7 @@ public class DeviceFileSystemController : ControllerBase
     if (!device.IsOnline)
     {
       logger.LogWarning("Device {DeviceId} is not online.", deviceId);
-      return Conflict("Device is not currently online.");
+      return Conflict(DeviceOfflineMessage);
     }
 
     var streamId = Guid.NewGuid();
@@ -670,5 +675,21 @@ public class DeviceFileSystemController : ControllerBase
       logger.LogError(ex, "Error downloading archive from device {DeviceId}", deviceId);
       return StatusCode(500, "An error occurred during archive download.");
     }
+  }
+
+  private ObjectResult NoResponseProblem()
+  {
+    return Problem(
+      detail: NoResponseMessage,
+      statusCode: StatusCodes.Status502BadGateway,
+      title: V1ProblemTitles.BadGateway);
+  }
+
+  private ObjectResult RemoteFailureProblem(string? reason)
+  {
+    return Problem(
+      detail: reason,
+      statusCode: StatusCodes.Status409Conflict,
+      title: V1ProblemTitles.Conflict);
   }
 }

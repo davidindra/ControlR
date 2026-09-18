@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
+using ControlR.Web.Server.Constants;
 
 namespace ControlR.Web.Server.Api.V1;
 
@@ -15,22 +16,22 @@ public class TestEmailController : ControllerBase
 {
   [HttpPost]
   [ProducesResponseType(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
   public async Task<IActionResult> SendTestEmail(
     [FromServices] AppDb appDb,
-    [FromServices] IControlrEmailSender emailSender,
-    [FromServices] IOptionsMonitor<AppOptions> appOptions)
+    [FromServices] IControlrEmailSender emailSender)
   {
-    if (appOptions.CurrentValue.DisableEmailSending)
-    {
-      return BadRequest("Email sending is disabled in application settings.");
-    }
-
     if (!User.TryGetUserId(out var userId))
     {
-      return BadRequest("User ID not found");
+      return Problem(
+        detail: "User ID not found",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var user = await appDb
@@ -41,7 +42,10 @@ public class TestEmailController : ControllerBase
 
     if (user?.Email is null)
     {
-      return BadRequest("User email not found");
+      return Problem(
+        detail: "User email not found",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await emailSender.SendEmailWithResult(
@@ -55,6 +59,7 @@ public class TestEmailController : ControllerBase
       return Ok();
     }
 
-    return Problem(result.Reason);
+    // Returns the kind of failure that occurred in the EmailSender.
+    return result.ToActionResult();
   }
 }

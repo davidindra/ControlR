@@ -20,8 +20,8 @@ public class UserPreferencesController : ControllerBase
 {
   [HttpGet]
   [ProducesResponseType<UserPreferencesDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<UserPreferencesDto>> GetAll(
     [FromServices] IUserPreferencesManager userPreferencesManager,
     [FromQuery] Guid tenantId,
@@ -44,9 +44,9 @@ public class UserPreferencesController : ControllerBase
   [HttpGet("{name}")]
   [ProducesResponseType<UserPreferenceResponseDto>(StatusCodes.Status200OK)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<UserPreferenceResponseDto>> GetPreference(
     [FromServices] AppDb appDb,
     [FromRoute] string name,
@@ -85,9 +85,9 @@ public class UserPreferencesController : ControllerBase
 
   [HttpPost]
   [ProducesResponseType<UserPreferenceResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<UserPreferenceResponseDto>> SetPreference(
     [FromServices] IUserPreferencesManager userPreferencesManager,
     [FromQuery] Guid tenantId,
@@ -119,9 +119,9 @@ public class UserPreferencesController : ControllerBase
 
   [HttpPut]
   [ProducesResponseType<UserPreferencesDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<UserPreferencesDto>> SetPreferences(
     [FromServices] IUserPreferencesManager userPreferencesManager,
     [FromQuery] Guid tenantId,

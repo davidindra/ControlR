@@ -38,8 +38,8 @@ internal static class HttpExtensions
       return bestMessage;
     }
 
-    // Not a ProblemDetails response (e.g. controller BadRequest("string")).
-    // Use raw content as the error message, unescaping JSON string quotes if present.
+    // Not a ProblemDetails body. The deprecated /api/* endpoints this client still calls answer some
+    // failures with a bare JSON string. The /api/v1 failures answer with a ProblemDetails body.
     var trimmed = rawContent.Trim();
     if (trimmed.Length > 2 && trimmed[0] == '"' && trimmed[^1] == '"')
     {
@@ -75,7 +75,8 @@ internal static class HttpExtensions
       }
       catch
       {
-        // Not a ProblemDetails response -- EnrichErrorMessage will use raw content.
+        // The body is not a JSON object: an HTML error page, a plain-text status page, or one of
+        // the bare JSON strings the deprecated /api/* endpoints return for some failures.
       }
 
       var enrichedMessage = EnrichErrorMessage(rawContent, problemDetails);

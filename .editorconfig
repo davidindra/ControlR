@@ -142,3 +142,20 @@ dotnet_naming_rule.const_fields_should_be_pascal_case.style = pascal_case
 
 dotnet_naming_symbols.const_fields.applicable_kinds = field
 dotnet_naming_symbols.const_fields.required_modifiers = const
+
+# RS0030: Do not use banned APIs. The banned list lives in
+# ControlR.Web.Server/BannedSymbols.txt and names the value-carrying MVC error shortcuts
+# (BadRequest(value), Conflict(value), NotFound(value), Unauthorized(value),
+# StatusCode(code, value)). Those write a bare body, so a caller can read the status but gets
+# nothing machine-readable to go with it. V1 answers every failure with an RFC 9457
+# ProblemDetails body, so the shortcuts are errors under Api/V1. The rest of the project -
+# including the Internal/BFF routes, which still return bare strings on purpose - stays silent.
+# These sections come last because EditorConfig resolves a property by its last match.
+[*.cs]
+dotnet_diagnostic.RS0030.severity = none
+
+[ControlR.Web.Server/Api/V1/*.cs]
+dotnet_diagnostic.RS0030.severity = error
+
+[ControlR.Web.Server/Api/V1/**/*.cs]
+dotnet_diagnostic.RS0030.severity = error

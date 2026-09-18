@@ -54,9 +54,9 @@ public class InstallerKeysController(
   [HttpDelete("{keyId:guid}")]
   [Authorize(Policy = PolicyNames.RequireInstallerKeyWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> Delete(
       Guid keyId,
       [FromQuery] Guid tenantId,
@@ -86,8 +86,8 @@ public class InstallerKeysController(
   [HttpGet]
   [Authorize(Policy = PolicyNames.RequireInstallerKeyRead)]
   [ProducesResponseType<InstallerKeysResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<InstallerKeysResponseDto>> GetAll(
       [FromQuery] Guid tenantId,
       CancellationToken cancellationToken)
@@ -114,9 +114,9 @@ public class InstallerKeysController(
   [HttpGet("{keyId:guid}/usages")]
   [Authorize(Policy = PolicyNames.RequireInstallerKeyRead)]
   [ProducesResponseType<InstallerKeyUsagesResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> GetUsages(
       Guid keyId,
       [FromQuery] Guid tenantId,
@@ -149,10 +149,10 @@ public class InstallerKeysController(
   [HttpPut("{keyId:guid}")]
   [Authorize(Policy = PolicyNames.RequireInstallerKeyWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> Rename(
       Guid keyId,
       [FromQuery] Guid tenantId,

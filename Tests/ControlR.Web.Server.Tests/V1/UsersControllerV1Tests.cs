@@ -3,6 +3,7 @@ using ControlR.Web.Server.Data;
 using ControlR.Web.Server.Services.Authorization;
 using ControlR.Web.Server.Services.Users;
 using ControlR.Web.Server.Tests.Helpers;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using ControlR.Libraries.Api.Contracts.Dtos.ServerApi.V1.Users;
@@ -54,6 +55,10 @@ public class UsersControllerV1Tests(ITestOutputHelper testOutput)
       new CreateUserRequestDto("ghost", "ghost@t.local", "T3stP@ssw0rd!", null),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<BadRequestObjectResult>(result.Result);
+    ProblemDetailsAsserts.AssertProblem(
+      result.Result,
+      StatusCodes.Status400BadRequest,
+      "Invalid request.",
+      "Tenant not found.");
   }
 }

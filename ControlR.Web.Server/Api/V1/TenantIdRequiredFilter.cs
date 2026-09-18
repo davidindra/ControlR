@@ -1,5 +1,7 @@
+using ControlR.Web.Server.Constants;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 namespace ControlR.Web.Server.Api.V1;
 
@@ -26,11 +28,17 @@ public sealed class TenantIdRequiredFilter(string parameterName) : IActionFilter
       return;
     }
 
-    context.Result = new BadRequestObjectResult(new ProblemDetails
-    {
-      Status = StatusCodes.Status400BadRequest,
-      Title = "Invalid tenant id.",
-      Detail = $"{_parameterName} must be a non-empty GUID."
-    });
+    // Built through the factory so the body carries the same traceId extension as every other
+    // V1 error. The title is the table's name for a 400; what is actually wrong with this request
+    // belongs in the detail.
+    var problem = context.HttpContext.RequestServices
+      .GetRequiredService<ProblemDetailsFactory>()
+      .CreateProblemDetails(
+        context.HttpContext,
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest,
+        detail: $"{_parameterName} must be a non-empty GUID.");
+
+    context.Result = new BadRequestObjectResult(problem);
   }
 }

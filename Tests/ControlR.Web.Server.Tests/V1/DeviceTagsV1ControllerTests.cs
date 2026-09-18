@@ -3,6 +3,7 @@ using ControlR.Web.Server.Data;
 using ControlR.Web.Server.Data.Entities;
 using ControlR.Web.Server.Tests.Helpers;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -87,7 +88,13 @@ public class DeviceTagsV1ControllerTests(ITestOutputHelper testOutput)
       new DeviceTagAddRequestDto(foreignDevice.Id, tag.Id),
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundObjectResult>(result);
+    var problem = ProblemDetailsAsserts.AssertProblem(
+      result,
+      StatusCodes.Status404NotFound,
+      "Not found.");
+
+    // The collapse to a uniform 404 keeps the endpoint from confirming which half of the pair exists.
+    Assert.Null(problem.Detail);
   }
 
   [Fact]
@@ -134,7 +141,14 @@ public class DeviceTagsV1ControllerTests(ITestOutputHelper testOutput)
       tenant.Id,
       TestContext.Current.CancellationToken);
 
-    Assert.IsType<NotFoundObjectResult>(result);
+    var problem = ProblemDetailsAsserts.AssertProblem(
+      result,
+      StatusCodes.Status404NotFound,
+      "Not found.");
+
+    // A tag that is not on the device and a tag that does not exist are the same answer, so the
+    // body carries no detail explaining which case the caller hit.
+    Assert.Null(problem.Detail);
   }
 
   private static async Task<Tag> CreateTagAsync(TestApp testApp, Guid tenantId, string name)

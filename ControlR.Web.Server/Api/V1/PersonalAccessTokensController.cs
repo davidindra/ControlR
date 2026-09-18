@@ -2,6 +2,7 @@ using Asp.Versioning;
 using ControlR.Web.Server.Authz.Permissions;
 using Microsoft.AspNetCore.Mvc;
 using ControlR.Libraries.Api.Contracts.Dtos.ServerApi.V1.PersonalAccessTokens;
+using ControlR.Web.Server.Constants;
 
 namespace ControlR.Web.Server.Api.V1;
 
@@ -21,9 +22,9 @@ public class PersonalAccessTokensController : ControllerBase
   [HttpPost]
   [Authorize(Policy = PolicyNames.RequirePersonalAccessTokenSelfWrite)]
   [ProducesResponseType<CreatePersonalAccessTokenResponseDto>(StatusCodes.Status201Created)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<CreatePersonalAccessTokenResponseDto>> Create(
     [FromServices] IPersonalAccessTokenManager personalAccessTokenManager,
     [FromServices] UserManager<AppUser> userManager,
@@ -38,12 +39,18 @@ public class PersonalAccessTokensController : ControllerBase
     var user = await userManager.GetUserAsync(User);
     if (user is null || user.TenantId == Guid.Empty)
     {
-      return BadRequest("User tenant not found");
+      return Problem(
+        detail: "User tenant not found",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await personalAccessTokenManager.CreateToken(
@@ -61,7 +68,10 @@ public class PersonalAccessTokensController : ControllerBase
 
     if (!result.IsSuccess)
     {
-      return BadRequest(result.Reason);
+      return Problem(
+        detail: result.Reason,
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var response = new CreatePersonalAccessTokenResponseDto(
@@ -77,9 +87,9 @@ public class PersonalAccessTokensController : ControllerBase
   [HttpDelete("{id:guid}")]
   [Authorize(Policy = PolicyNames.RequirePersonalAccessTokenSelfWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<IActionResult> Delete(
     [FromServices] IPersonalAccessTokenManager personalAccessTokenManager,
     [FromServices] UserManager<AppUser> userManager,
@@ -94,13 +104,19 @@ public class PersonalAccessTokensController : ControllerBase
     var user = await userManager.GetUserAsync(User);
     if (user is null)
     {
-      return BadRequest("User not found.");
+      return Problem(
+        detail: "User not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await personalAccessTokenManager.Delete(id, user.Id);
     if (!result.IsSuccess)
     {
-      return BadRequest(result.Reason);
+      return Problem(
+        detail: result.Reason,
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     return NoContent();
@@ -109,9 +125,9 @@ public class PersonalAccessTokensController : ControllerBase
   [HttpGet]
   [Authorize(Policy = PolicyNames.RequirePersonalAccessTokenSelfRead)]
   [ProducesResponseType<PersonalAccessTokensResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<PersonalAccessTokensResponseDto>> GetAll(
     [FromServices] IPersonalAccessTokenManager personalAccessTokenManager,
     [FromServices] UserManager<AppUser> userManager,
@@ -125,7 +141,10 @@ public class PersonalAccessTokensController : ControllerBase
     var user = await userManager.GetUserAsync(User);
     if (user is null)
     {
-      return BadRequest("User not found.");
+      return Problem(
+        detail: "User not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var tokens = await personalAccessTokenManager.GetForUser(user.Id);
@@ -138,9 +157,9 @@ public class PersonalAccessTokensController : ControllerBase
   [HttpPut("{id:guid}")]
   [Authorize(Policy = PolicyNames.RequirePersonalAccessTokenSelfWrite)]
   [ProducesResponseType<PersonalAccessTokenResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<PersonalAccessTokenResponseDto>> Update(
     [FromServices] IPersonalAccessTokenManager personalAccessTokenManager,
     [FromServices] UserManager<AppUser> userManager,
@@ -156,7 +175,10 @@ public class PersonalAccessTokensController : ControllerBase
     var user = await userManager.GetUserAsync(User);
     if (user is null)
     {
-      return BadRequest("User not found.");
+      return Problem(
+        detail: "User not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await personalAccessTokenManager.Update(
@@ -166,7 +188,10 @@ public class PersonalAccessTokensController : ControllerBase
 
     if (!result.IsSuccess)
     {
-      return BadRequest(result.Reason);
+      return Problem(
+        detail: result.Reason,
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     return Ok(ToV1ResponseDto(result.Value));

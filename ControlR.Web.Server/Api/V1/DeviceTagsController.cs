@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using ControlR.Libraries.Api.Contracts.Dtos.ServerApi.V1.DeviceTags;
+using ControlR.Web.Server.Constants;
 
 namespace ControlR.Web.Server.Api.V1;
 
@@ -17,9 +18,9 @@ public class DeviceTagsController : ControllerBase
 {
   [HttpPost]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> Add(
     [FromServices] AppDb appDb,
     [FromServices] IAuthorizationService authorizationService,
@@ -38,7 +39,7 @@ public class DeviceTagsController : ControllerBase
 
     if (device is null)
     {
-      return NotFound("Device not found.");
+      return Problem(statusCode: StatusCodes.Status404NotFound, title: V1ProblemTitles.NotFound);
     }
 
     var authResult = await authorizationService.AuthorizeAsync(User, device, DeviceResourcePolicies.TagsWrite);
@@ -52,7 +53,7 @@ public class DeviceTagsController : ControllerBase
 
     if (tag is null)
     {
-      return NotFound("Tag not found.");
+      return Problem(statusCode: StatusCodes.Status404NotFound, title: V1ProblemTitles.NotFound);
     }
 
     device.Tags ??= [];
@@ -64,9 +65,9 @@ public class DeviceTagsController : ControllerBase
 
   [HttpDelete("{deviceId:guid}/{tagId:guid}")]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> Remove(
     [FromServices] AppDb appDb,
     [FromServices] IAuthorizationService authorizationService,
@@ -86,7 +87,7 @@ public class DeviceTagsController : ControllerBase
 
     if (device is null)
     {
-      return NotFound("Device not found.");
+      return Problem(statusCode: StatusCodes.Status404NotFound, title: V1ProblemTitles.NotFound);
     }
 
     var authResult = await authorizationService.AuthorizeAsync(User, device, DeviceResourcePolicies.TagsWrite);
@@ -99,7 +100,7 @@ public class DeviceTagsController : ControllerBase
     var tag = device.Tags.Find(x => x.Id == tagId);
     if (tag is null)
     {
-      return NotFound("Tag not found on device.");
+      return Problem(statusCode: StatusCodes.Status404NotFound, title: V1ProblemTitles.NotFound);
     }
 
     device.Tags.Remove(tag);

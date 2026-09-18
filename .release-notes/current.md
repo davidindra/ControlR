@@ -2,6 +2,7 @@
 
 - ⚠️ You will need to log out and back in if you have "Remember Me" enabled. ⚠️
   - A pre-existing auth cookie will lack the new permission claims.
+- Failures from `/api/v1/*` endpoints now answer with an RFC 9457 `application/problem+json` body.
 - Some of the routes and DTOs used in the `/api/v1/*` endpoints have been changed.
   - There should be no more breaking changes to the `/api/v1/*` endpoints after this release.
 - Although roles were migrated to permission presets, user tags that mapped users to devices were removed.
@@ -41,6 +42,7 @@
 - The `ControlR.ApiClient` interactive session no longer keeps reporting itself as signed in after the server rejects its refresh token during an ordinary API call.
 - Disposing a `ControlR.ApiClient` interactive auth session now moves it to a new terminal `Disposed` state and raises `StateChanged`.
 - Interactive sign-in in `ControlR.ApiClient` now clears a personal access token or service account key if one was already configured on the session.
+- The dashboard's file operations no longer report success when the agent reports a failure.
 
 ## Removals
 
@@ -51,3 +53,6 @@ None.
 - `ControlR.ApiClient` now marks the internal installer-key and user logon-token methods
   `[Obsolete]`, each pointing at its `/api/v1` replacement and the difference the caller has to
   handle. The UI already uses V1 for both, so nothing in the product calls these anymore.
+- The value-carrying MVC error shortcuts (`BadRequest(value)`, `NotFound(value)`, `Conflict(value)`,
+  `Unauthorized(value)`, `StatusCode(code, value)`) are banned under `Api/V1` by RS0030, so a new V1
+  endpoint cannot reintroduce a bare-string error body. Use `Problem()` instead.

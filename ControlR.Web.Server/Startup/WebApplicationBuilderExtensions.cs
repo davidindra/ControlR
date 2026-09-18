@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.FileProviders;
 using MudBlazor.Services;
 using ControlR.Web.Server.Components.Account;
+using ControlR.Web.Server.Constants;
 using ControlR.Libraries.WebSocketRelay.Common.Extensions;
 using ControlR.Web.Server.Services.Users;
 using ControlR.Web.Server.Services.Tenants;
@@ -132,7 +133,9 @@ public static class WebApplicationBuilderExtensions
       }
     });
 
-    builder.Services.AddProblemDetails();
+    // Registering the table here means a response the pipeline writes is titled exactly like one a
+    // controller writes, including the errors that never reach an action.
+    builder.Services.AddProblemDetails(V1ProblemTitles.ConfigureProblemDetails);
     builder.Services.AddExceptionHandler<ApiExceptionHandler>();
     builder.Services.AddExceptionHandler<UiExceptionHandler>();
 

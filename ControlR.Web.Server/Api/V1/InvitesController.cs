@@ -22,9 +22,9 @@ public class InvitesController : ControllerBase
   [HttpPost]
   [Authorize(Policy = PolicyNames.RequireTenantUsersWrite)]
   [ProducesResponseType<InviteResponseDto>(StatusCodes.Status201Created)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status409Conflict)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
   public async Task<ActionResult<InviteResponseDto>> Create(
     [FromServices] ITenantInvitesProvider tenantInvitesProvider,
     [FromQuery] Guid tenantId,
@@ -56,9 +56,9 @@ public class InvitesController : ControllerBase
   [HttpDelete("{inviteId:guid}")]
   [Authorize(Policy = PolicyNames.RequireTenantUsersWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> Delete(
     [FromServices] ITenantInvitesProvider tenantInvitesProvider,
     [FromRoute] Guid inviteId,
@@ -77,8 +77,8 @@ public class InvitesController : ControllerBase
   [HttpGet]
   [Authorize(Policy = PolicyNames.RequireUsersRead)]
   [ProducesResponseType<InvitesResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<InvitesResponseDto>> GetAll(
     [FromServices] ITenantInvitesProvider tenantInvitesProvider,
     [FromServices] IPermissionEvaluator permissionEvaluator,

@@ -3,6 +3,7 @@ using ControlR.Web.Server.Authz.Permissions;
 using ControlR.Web.Server.Extensions.Dtos.V1;
 using ControlR.Web.Server.Services.LogonTokens;
 using Microsoft.AspNetCore.Mvc;
+using ControlR.Web.Server.Constants;
 
 namespace ControlR.Web.Server.Api.V1;
 
@@ -14,8 +15,8 @@ public class LogonTokensController : ControllerBase
 {
   [HttpPost("external")]
   [ProducesResponseType<V1Dtos.LogonTokenResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
   public async Task<ActionResult<V1Dtos.LogonTokenResponseDto>> CreateForExternal(
     [FromServices] AppDb appDb,
     [FromServices] IAuthorizationService authorizationService,
@@ -25,7 +26,10 @@ public class LogonTokensController : ControllerBase
     var device = await appDb.Devices.FindAsync(request.DeviceId);
     if (device is null || device.TenantId != request.TenantId)
     {
-      return BadRequest("Device not found");
+      return Problem(
+        detail: "Device not found",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     // Redundant while the device is loaded through the filtered AppDb, since a tenant-bound
@@ -33,7 +37,10 @@ public class LogonTokensController : ControllerBase
     if (!User.IsServerPrincipal() &&
       (!User.TryGetTenantId(out var callerTenantId) || callerTenantId != device.TenantId))
     {
-      return BadRequest("Device not found");
+      return Problem(
+        detail: "Device not found",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var authResult = await authorizationService.AuthorizeAsync(User, device, DeviceResourcePolicies.LogonTokenCreate);
@@ -45,7 +52,10 @@ public class LogonTokensController : ControllerBase
     var creator = User.ToPrincipalDescriptor();
     if (creator is null)
     {
-      return BadRequest("Caller principal not found.");
+      return Problem(
+        detail: "Caller principal not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await logonTokenScopeService.CreateTokenWithScopes(
@@ -63,9 +73,8 @@ public class LogonTokensController : ControllerBase
 
   [HttpPost("user")]
   [ProducesResponseType<V1Dtos.LogonTokenResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
-  [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
   public async Task<ActionResult<V1Dtos.LogonTokenResponseDto>> CreateForUser(
     [FromServices] AppDb appDb,
     [FromServices] IAuthorizationService authorizationService,
@@ -75,7 +84,10 @@ public class LogonTokensController : ControllerBase
     var device = await appDb.Devices.FindAsync(request.DeviceId);
     if (device is null || device.TenantId != request.TenantId)
     {
-      return BadRequest("Device not found");
+      return Problem(
+        detail: "Device not found",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     // Redundant while the device is loaded through the filtered AppDb, since a tenant-bound
@@ -83,7 +95,10 @@ public class LogonTokensController : ControllerBase
     if (!User.IsServerPrincipal() &&
       (!User.TryGetTenantId(out var callerTenantId) || callerTenantId != device.TenantId))
     {
-      return BadRequest("Device not found");
+      return Problem(
+        detail: "Device not found",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var authResult = await authorizationService.AuthorizeAsync(User, device, DeviceResourcePolicies.LogonTokenCreate);
@@ -95,7 +110,10 @@ public class LogonTokensController : ControllerBase
     var creator = User.ToPrincipalDescriptor();
     if (creator is null)
     {
-      return BadRequest("Caller principal not found.");
+      return Problem(
+        detail: "Caller principal not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await logonTokenScopeService.CreateTokenWithScopes(

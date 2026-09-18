@@ -64,9 +64,9 @@ else
   app.UseHsts();
 }
 
-app.UseWhen(
-  ctx => ctx.Request.Path.StartsWithSegments("/api"),
-  apiApp => apiApp.UseStatusCodePages());
+// Errors that never reach a controller, such as an unmatched route or a missing credential, leave
+// the pipeline with a status code and no body.
+app.UseMiddleware<ApiProblemDetailsMiddleware>();
 
 app.MapStaticAssets();
 app.UseStaticFiles();

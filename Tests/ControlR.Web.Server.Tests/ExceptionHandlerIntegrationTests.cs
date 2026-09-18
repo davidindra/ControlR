@@ -49,7 +49,7 @@ public class ExceptionHandlerIntegrationTests(ITestOutputHelper testOutput)
 
     Assert.NotNull(problemDetails);
     Assert.Equal(404, problemDetails.Status);
-    Assert.Equal("Not Found", problemDetails.Title);
+    Assert.Equal("Not found.", problemDetails.Title);
     Assert.NotNull(problemDetails.Type);
   }
 
@@ -73,7 +73,7 @@ public class ExceptionHandlerIntegrationTests(ITestOutputHelper testOutput)
 
     Assert.NotNull(problemDetails);
     Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-    Assert.Equal("An unexpected error occurred.", problemDetails.Title);
+    Assert.Equal("Internal server error.", problemDetails.Title);
     Assert.Equal(500, problemDetails.Status);
     Assert.Equal("An unexpected error occurred.", problemDetails.Detail);
     Assert.Equal(

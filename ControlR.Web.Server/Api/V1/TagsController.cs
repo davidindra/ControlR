@@ -22,8 +22,8 @@ public class TagsController : ControllerBase
   [HttpPost]
   [Authorize(Policy = PolicyNames.RequireTagsWrite)]
   [ProducesResponseType<TagResponseDto>(StatusCodes.Status201Created)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<TagResponseDto>> Create(
     [FromServices] AppDb appDb,
     [FromQuery] Guid tenantId,
@@ -54,9 +54,9 @@ public class TagsController : ControllerBase
   [HttpDelete("{tagId:guid}")]
   [Authorize(Policy = PolicyNames.RequireTagsWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> Delete(
     [FromServices] AppDb appDb,
     [FromRoute] Guid tagId,
@@ -85,9 +85,9 @@ public class TagsController : ControllerBase
 
   [HttpGet("{tagId:guid}")]
   [ProducesResponseType<TagResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<TagResponseDto>> Get(
     [FromServices] AppDb appDb,
     [FromServices] IDeviceAccessScopeResolver scopeResolver,
@@ -113,8 +113,8 @@ public class TagsController : ControllerBase
 
   [HttpGet]
   [ProducesResponseType<TagsResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<TagsResponseDto>> GetAll(
     [FromServices] AppDb appDb,
     [FromServices] IDeviceAccessScopeResolver scopeResolver,
@@ -168,9 +168,9 @@ public class TagsController : ControllerBase
   [HttpPut("{tagId:guid}")]
   [Authorize(Policy = PolicyNames.RequireTagsWrite)]
   [ProducesResponseType<TagResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<TagResponseDto>> Update(
     [FromServices] AppDb appDb,
     [FromServices] IDeviceAccessScopeResolver scopeResolver,

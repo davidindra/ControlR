@@ -3,6 +3,7 @@ using ControlR.Libraries.Api.Contracts.Dtos.ServerApi.V1.DeviceGroups;
 using ControlR.Web.Server.Authz.Permissions;
 using ControlR.Web.Server.Primitives;
 using Microsoft.AspNetCore.Mvc;
+using ControlR.Web.Server.Constants;
 
 namespace ControlR.Web.Server.Api.V1;
 
@@ -24,10 +25,10 @@ public class DeviceGroupsController(
 
   [HttpPost("{deviceGroupId:guid}/members")]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> AddMembers(
     [FromRoute] Guid deviceGroupId,
     [FromQuery] Guid tenantId,
@@ -42,7 +43,10 @@ public class DeviceGroupsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var authorizationResult = await authorizationService.AuthorizeAsync(
@@ -68,9 +72,9 @@ public class DeviceGroupsController(
   [HttpPost]
   [Authorize(Policy = PolicyNames.RequireDeviceGroupsWrite)]
   [ProducesResponseType<DeviceGroupDetailDto>(StatusCodes.Status201Created)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<DeviceGroupDetailDto>> Create(
     [FromQuery] Guid tenantId,
     [FromBody] CreateDeviceGroupRequestDto request,
@@ -83,7 +87,10 @@ public class DeviceGroupsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _deviceGroupManager.Create(
@@ -103,9 +110,9 @@ public class DeviceGroupsController(
   [HttpDelete("{deviceGroupId:guid}")]
   [Authorize(Policy = PolicyNames.RequireDeviceGroupsWrite)]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> Delete(
     [FromRoute] Guid deviceGroupId,
     [FromQuery] Guid tenantId,
@@ -118,7 +125,10 @@ public class DeviceGroupsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _deviceGroupManager.Delete(deviceGroupId, resolvedTenantId, actor, cancellationToken);
@@ -133,9 +143,9 @@ public class DeviceGroupsController(
   [HttpGet("{deviceGroupId:guid}")]
   [Authorize(Policy = PolicyNames.RequireDeviceGroupsRead)]
   [ProducesResponseType<DeviceGroupDetailDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<DeviceGroupDetailDto>> Get(
     [FromRoute] Guid deviceGroupId,
     [FromQuery] Guid tenantId,
@@ -158,8 +168,8 @@ public class DeviceGroupsController(
   [HttpGet]
   [Authorize(Policy = PolicyNames.RequireDeviceGroupsRead)]
   [ProducesResponseType<DeviceGroupsResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<DeviceGroupsResponseDto>> GetAll(
     [FromQuery] Guid tenantId,
     CancellationToken cancellationToken)
@@ -179,10 +189,10 @@ public class DeviceGroupsController(
 
   [HttpDelete("{deviceGroupId:guid}/members")]
   [ProducesResponseType(StatusCodes.Status204NoContent)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<IActionResult> RemoveMembers(
     [FromRoute] Guid deviceGroupId,
     [FromQuery] Guid tenantId,
@@ -197,7 +207,10 @@ public class DeviceGroupsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var authorizationResult = await authorizationService.AuthorizeAsync(
@@ -223,10 +236,10 @@ public class DeviceGroupsController(
   [HttpPut("{deviceGroupId:guid}")]
   [Authorize(Policy = PolicyNames.RequireDeviceGroupsWrite)]
   [ProducesResponseType<DeviceGroupDetailDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
-  [ProducesResponseType(StatusCodes.Status404NotFound)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, "application/problem+json")]
   public async Task<ActionResult<DeviceGroupDetailDto>> Update(
     [FromRoute] Guid deviceGroupId,
     [FromQuery] Guid tenantId,
@@ -240,7 +253,10 @@ public class DeviceGroupsController(
 
     if (User.ToPrincipalDescriptor() is not { } actor)
     {
-      return BadRequest("User ID not found.");
+      return Problem(
+        detail: "User ID not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var result = await _deviceGroupManager.Update(

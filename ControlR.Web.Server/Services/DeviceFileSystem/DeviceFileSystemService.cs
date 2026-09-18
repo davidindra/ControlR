@@ -9,7 +9,7 @@ namespace ControlR.Web.Server.Services.DeviceFileSystem;
 /// Runs the device file system operations that ask a connected agent over the hub. Every operation
 /// applies the same guards in the same order: load the device, authorize the caller against it,
 /// require the agent to be online, then dispatch. What stopped an operation is reported as a
-/// <see cref="FileSystemOutcome{TValue}" /> rather than as a response.
+/// <see cref="FileSystemOutcome" /> rather than as a response.
 /// </summary>
 /// <remarks>
 /// The service never chooses a status code; that belongs to the caller.
@@ -23,10 +23,10 @@ public interface IDeviceFileSystemService
 {
   /// <summary>
   /// Asks the agent to create a directory under <see cref="CreateDirectoryHubDto.ParentPath" />. The
-  /// agent's answer is reported as <see cref="FileSystemFailure.HubRejected" />, which the creating
-  /// endpoint historically ignores.
+  /// agent's own failure text is reported as <see cref="FileSystemFailure.RemoteFailure" />, and an
+  /// agent that never answered is reported as <see cref="FileSystemFailure.NoResponse" />.
   /// </summary>
-  Task<FileSystemOutcome<object?>> CreateDirectory(
+  Task<FileSystemOutcome> CreateDirectory(
     ClaimsPrincipal user,
     Guid deviceId,
     InternalDtos.CreateDirectoryRequestDto request,
@@ -37,7 +37,7 @@ public interface IDeviceFileSystemService
   /// Asks the agent to delete a path. Only the path is forwarded; the caller's directory flag is
   /// dropped at this boundary. The agent's answer is reported, as with directory creation.
   /// </summary>
-  Task<FileSystemOutcome<object?>> DeletePath(
+  Task<FileSystemOutcome> DeletePath(
     ClaimsPrincipal user,
     Guid deviceId,
     InternalDtos.FileDeleteRequestDto request,
@@ -65,7 +65,7 @@ public interface IDeviceFileSystemService
 
   /// <summary>
   /// Asks the agent to split a path into its segments. An agent that answers with nothing at all is
-  /// reported as <see cref="FileSystemFailure.HubRejected" /> with no reason.
+  /// reported as <see cref="FileSystemFailure.NoResponse" />.
   /// </summary>
   Task<FileSystemOutcome<InternalDtos.PathSegmentsResponseDto>> GetPathSegments(
     ClaimsPrincipal user,
@@ -117,7 +117,7 @@ public class DeviceFileSystemService(
   private readonly IHubStreamStore _hubStreamStore = hubStreamStore;
   private readonly ILogger<DeviceFileSystemService> _logger = logger;
 
-  public async Task<FileSystemOutcome<object?>> CreateDirectory(
+  public async Task<FileSystemOutcome> CreateDirectory(
     ClaimsPrincipal user,
     Guid deviceId,
     InternalDtos.CreateDirectoryRequestDto request,
@@ -133,7 +133,7 @@ public class DeviceFileSystemService(
 
     if (guarded is not { Succeeded: true, Value: { } device })
     {
-      return new(guarded.Failure, guarded.Reason, null);
+      return new(guarded.Failure, guarded.Reason);
     }
 
     var createDirectoryRequest = new CreateDirectoryHubDto(request.ParentPath, request.DirectoryName);
@@ -147,24 +147,28 @@ public class DeviceFileSystemService(
       _logger.LogInformation("Directory creation requested for {DirectoryName} in {ParentPath} on device {DeviceId}",
         request.DirectoryName, request.ParentPath, deviceId);
 
-      // An agent that is no longer reachable answers with nothing, which used to be indistinguishable
-      // from success here. Report it as a rejection without letting the missing answer throw.
-      if (result is null || !result.IsSuccess)
+      if (result is null)
       {
-        return new(FileSystemFailure.HubRejected, result?.Reason, null);
+        _logger.LogWarning("No response received from agent for directory creation on device {DeviceId}", deviceId);
+        return new(FileSystemFailure.NoResponse, null);
       }
 
-      return new(FileSystemFailure.None, null, null);
+      if (!result.IsSuccess)
+      {
+        return new(FileSystemFailure.RemoteFailure, result.Reason);
+      }
+
+      return new(FileSystemFailure.None, null);
     }
     catch (Exception ex)
     {
       _logger.LogError(ex, "Error creating directory {DirectoryName} in {ParentPath} on device {DeviceId}",
         request.DirectoryName, request.ParentPath, deviceId);
-      return new(FileSystemFailure.Unexpected, ex.Message, null);
+      return new(FileSystemFailure.Unexpected, ex.Message);
     }
   }
 
-  public async Task<FileSystemOutcome<object?>> DeletePath(
+  public async Task<FileSystemOutcome> DeletePath(
     ClaimsPrincipal user,
     Guid deviceId,
     InternalDtos.FileDeleteRequestDto request,
@@ -180,7 +184,7 @@ public class DeviceFileSystemService(
 
     if (guarded is not { Succeeded: true, Value: { } device })
     {
-      return new(guarded.Failure, guarded.Reason, null);
+      return new(guarded.Failure, guarded.Reason);
     }
 
     var deleteRequest = new FileDeleteHubDto(request.FilePath);
@@ -194,20 +198,24 @@ public class DeviceFileSystemService(
       _logger.LogInformation("File deletion requested for {FilePath} on device {DeviceId}",
         request.FilePath, deviceId);
 
-      // See CreateDirectory. The missing answer of an unreachable agent is a rejection, and the
-      // deleting endpoint is free to ignore it.
-      if (result is null || !result.IsSuccess)
+      if (result is null)
       {
-        return new(FileSystemFailure.HubRejected, result?.Reason, null);
+        _logger.LogWarning("No response received from agent for file deletion on device {DeviceId}", deviceId);
+        return new(FileSystemFailure.NoResponse, null);
       }
 
-      return new(FileSystemFailure.None, null, null);
+      if (!result.IsSuccess)
+      {
+        return new(FileSystemFailure.RemoteFailure, result.Reason);
+      }
+
+      return new(FileSystemFailure.None, null);
     }
     catch (Exception ex)
     {
       _logger.LogError(ex, "Error deleting file {FilePath} on device {DeviceId}",
         request.FilePath, deviceId);
-      return new(FileSystemFailure.Unexpected, ex.Message, null);
+      return new(FileSystemFailure.Unexpected, ex.Message);
     }
   }
 
@@ -286,11 +294,17 @@ public class DeviceFileSystemService(
         .Client(device.ConnectionId)
         .GetLogFiles();
 
+      if (result is null)
+      {
+        _logger.LogWarning("No response received from agent for log files request on device {DeviceId}", deviceId);
+        return new(FileSystemFailure.NoResponse, null, null);
+      }
+
       if (!result.IsSuccess)
       {
         _logger.LogError("Get log files request failed for device {DeviceId}: {Reason}",
           deviceId, result.Reason);
-        return new(FileSystemFailure.HubRejected, result.Reason, null);
+        return new(FileSystemFailure.RemoteFailure, result.Reason, null);
       }
 
       return new(FileSystemFailure.None, null, result.Value);
@@ -346,7 +360,7 @@ public class DeviceFileSystemService(
       if (result is null)
       {
         _logger.LogWarning("No response received from agent for path segments request on device {DeviceId} path {TargetPath}", request.DeviceId, request.TargetPath);
-        return new(FileSystemFailure.HubRejected, null, null);
+        return new(FileSystemFailure.NoResponse, null, null);
       }
 
       return new(FileSystemFailure.None, null, result);
@@ -381,6 +395,12 @@ public class DeviceFileSystemService(
       var result = await _agentHub.Clients.Client(device.ConnectionId)
         .GetRootDrives(request);
 
+      if (result is null)
+      {
+        _logger.LogWarning("No response received from agent for root drives request on device {DeviceId}", request.DeviceId);
+        return new(FileSystemFailure.NoResponse, null, null);
+      }
+
       if (result.IsSuccess)
       {
         return new(FileSystemFailure.None, null, result.Value);
@@ -388,7 +408,7 @@ public class DeviceFileSystemService(
 
       _logger.LogWarning("Failed to get root drives for device {DeviceId}: {Reason}",
         request.DeviceId, result.Reason);
-      return new(FileSystemFailure.HubRejected, result.Reason, null);
+      return new(FileSystemFailure.RemoteFailure, result.Reason, null);
     }
     catch (Exception ex)
     {
@@ -474,12 +494,11 @@ public class DeviceFileSystemService(
         .ValidateFilePath(validateRequest);
 
       // The agent's reply is the answer itself rather than a hub result wrapping it. An agent that
-      // never answered produces nothing, reported as a reasonless rejection so the caller answers
-      // 502, matching every sibling's missing-answer case.
+      // never answered produces nothing, reported so the caller answers 502.
       if (result is null)
       {
         _logger.LogWarning("No response received from agent for path validation on device {DeviceId}", deviceId);
-        return new(FileSystemFailure.HubRejected, null, null);
+        return new(FileSystemFailure.NoResponse, null, null);
       }
 
       _logger.LogInformation(
@@ -567,11 +586,18 @@ public class DeviceFileSystemService(
 
     var result = await startStream(streamId);
 
+    if (result is null)
+    {
+      _logger.LogWarning("No response received from agent for {OperationName} stream on device {DeviceId} path {DirectoryPath}",
+        operationName, device.Id, directoryPath);
+      return new(FileSystemFailure.NoResponse, null, null);
+    }
+
     if (!result.IsSuccess)
     {
       _logger.LogWarning("Failed to initiate {OperationName} stream for device {DeviceId} path {DirectoryPath}: {Reason}",
         operationName, device.Id, directoryPath, result.Reason);
-      return new(FileSystemFailure.HubRejected, result.Reason, null);
+      return new(FileSystemFailure.RemoteFailure, result.Reason, null);
     }
 
     var items = new List<InternalDtos.FileSystemEntryDto>();

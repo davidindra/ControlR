@@ -30,9 +30,12 @@ public sealed class RequireTenantIdActionConvention : IActionModelConvention
 
     action.Filters.Add(new TenantIdRequiredFilter(TenantIdParameterName));
 
-    // Declared as filter metadata so the API explorer advertises it.
+    // Declared as filter metadata so the API explorer advertises it. The content type is spelled out
+    // because the two-argument form advertises the response as application/json, and the filter
+    // answers with an RFC 9457 ProblemDetails body.
     action.Filters.Add(new ProducesResponseTypeAttribute(
       typeof(ProblemDetails),
-      StatusCodes.Status400BadRequest));
+      StatusCodes.Status400BadRequest,
+      "application/problem+json"));
   }
 }

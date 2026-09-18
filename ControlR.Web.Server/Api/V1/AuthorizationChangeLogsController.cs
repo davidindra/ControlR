@@ -3,6 +3,7 @@ using ControlR.Libraries.Api.Contracts.Dtos.ServerApi.V1.AuthorizationChangeLogs
 using ControlR.Web.Server.Authz.Permissions;
 using ControlR.Web.Server.Services.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ControlR.Web.Server.Constants;
 
 namespace ControlR.Web.Server.Api.V1;
 
@@ -30,9 +31,9 @@ public class AuthorizationChangeLogsController(
 
   [HttpGet]
   [ProducesResponseType<AuthorizationChangeLogsResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<AuthorizationChangeLogsResponseDto>> Get(
     [FromQuery] Guid tenantId,
     [FromQuery] AuthorizationChangeLogSearchQueryDto searchQuery,
@@ -41,7 +42,10 @@ public class AuthorizationChangeLogsController(
     var principal = User.ToPrincipalDescriptor();
     if (principal is null)
     {
-      return BadRequest("User principal not found.");
+      return Problem(
+        detail: "User principal not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     var serverResource = new ResourceDescriptor(PermissionScopeKind.Server);
@@ -110,9 +114,9 @@ public class AuthorizationChangeLogsController(
   /// </summary>
   [HttpGet("server")]
   [ProducesResponseType<AuthorizationChangeLogsResponseDto>(StatusCodes.Status200OK)]
-  [ProducesResponseType(StatusCodes.Status400BadRequest)]
-  [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-  [ProducesResponseType(StatusCodes.Status403Forbidden)]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden, "application/problem+json")]
   public async Task<ActionResult<AuthorizationChangeLogsResponseDto>> GetServerScoped(
     [FromQuery] AuthorizationChangeLogSearchQueryDto searchQuery,
     CancellationToken cancellationToken)
@@ -120,7 +124,10 @@ public class AuthorizationChangeLogsController(
     var principal = User.ToPrincipalDescriptor();
     if (principal is null)
     {
-      return BadRequest("User principal not found.");
+      return Problem(
+        detail: "User principal not found.",
+        statusCode: StatusCodes.Status400BadRequest,
+        title: V1ProblemTitles.InvalidRequest);
     }
 
     // The gate is the permission, not the principal kind. ServerScope grants this to server
