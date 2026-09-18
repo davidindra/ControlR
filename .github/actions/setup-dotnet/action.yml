@@ -10,7 +10,3 @@ runs:
         dotnet-version: |
           9.x
           10.x
-      env:
-        DOTNET_INSTALL_DIR: $HOME/.dotnet
-        DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
-        DOTNET_NOLOGO: true
