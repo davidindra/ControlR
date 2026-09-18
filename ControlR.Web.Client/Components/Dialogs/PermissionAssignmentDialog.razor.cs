@@ -178,8 +178,10 @@ public partial class PermissionAssignmentDialog : ComponentBase
   }
 
   /// <summary>
-  /// Builds the grouped dropdown: a family header above each run of matching entries. An unseen family
-  /// (no label) renders its entries with no header, so a newer server's permissions stay pickable.
+  /// Builds the grouped dropdown: a family header above each run of matching entries. Headers come
+  /// from <see cref="PermissionGrouping"/>, so a family this build has never seen still gets one.
+  /// MudBlazor swallows anything thrown out of a <see cref="MudAutocomplete{T}.SearchFunc"/> and
+  /// leaves the dropdown empty, so nothing here may escape.
   /// </summary>
   private async Task<IEnumerable<PermissionPickerRow>> SearchPermissionRows(
     string query,
@@ -187,29 +189,33 @@ public partial class PermissionAssignmentDialog : ComponentBase
   {
     await Task.CompletedTask;
 
-    var matches = string.IsNullOrWhiteSpace(query)
-      ? _catalog
-      : [.. _catalog.Where(p =>
-        p.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-        p.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase))];
-
-    var rows = new List<PermissionPickerRow>();
-    foreach (var group in PermissionGrouping.GroupForDisplay(matches))
+    try
     {
-      // An unlabelled family (a name this build has never seen) renders its entries with no header,
-      // so a newer server's permissions stay pickable instead of disappearing.
-      if (group.Label is { } label)
+      var matches = string.IsNullOrWhiteSpace(query)
+        ? _catalog
+        : [.. _catalog.Where(p =>
+          p.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+          p.DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase))];
+
+      var rows = new List<PermissionPickerRow>();
+      foreach (var group in PermissionGrouping.GroupForDisplay(matches))
       {
-        rows.Add(PermissionPickerRow.Header(label));
+        rows.Add(PermissionPickerRow.Header(group.Label));
+
+        foreach (var entry in group.Entries)
+        {
+          rows.Add(PermissionPickerRow.ForEntry(DisplayOf(entry), entry));
+        }
       }
 
-      foreach (var entry in group.Entries)
-      {
-        rows.Add(PermissionPickerRow.ForEntry(DisplayOf(entry), entry));
-      }
+      return rows;
     }
-
-    return rows;
+    catch (Exception ex)
+    {
+      Logger.LogError(ex, "Failed to build the permission picker rows.");
+      Snackbar.Add("Failed to list permissions.", Severity.Error);
+      return [];
+    }
   }
 
   private async Task Submit()

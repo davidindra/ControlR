@@ -1,4 +1,3 @@
-using System.Collections.Frozen;
 using ControlR.Libraries.Api.Contracts.Dtos.ServerApi.V1.PermissionAssignments;
 
 namespace ControlR.Web.Client.Helpers;
@@ -14,26 +13,7 @@ internal static class PermissionGrouping
 {
   private const char FamilySeparator = '.';
 
-  /// <summary>
-  /// Explicit labels so a header is never a surprise-cased prefix. Unknown families throw rather
-  /// than fall back to a generated label or an "Other" bucket, because a silently mislabelled
-  /// permission in a picker is worse than a build the owner of the new permission has to finish.
-  /// <c>PermissionGroupingTests</c> holds the catalog against this map.
-  /// </summary>
-  private static readonly FrozenDictionary<string, string> _groupLabels = new Dictionary<string, string>
-  {
-    ["agent"] = "Agent",
-    ["device"] = "Devices",
-    ["device-group"] = "Device Groups",
-    ["installer-key"] = "Installer Keys",
-    ["personal-access-token"] = "Personal Access Tokens",
-    ["server"] = "Server",
-    ["service-account"] = "Service Accounts",
-    ["tenant"] = "Tenant",
-    ["user-group"] = "User Groups",
-  }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
-
-  internal static IReadOnlyDictionary<string, string> GroupLabels => _groupLabels;
+  private const char FamilyWordSeparator = '-';
 
   /// <summary>
   /// Groups catalog entries for display: groups ordered by label, entries ordered by
@@ -52,16 +32,31 @@ internal static class PermissionGrouping
           [.. group.OrderBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase)]))
     ];
 
-  internal static string GroupLabel(string permissionName) => LabelOf(GroupKeyOf(permissionName));
-
   private static string GroupKeyOf(string permissionName) =>
     permissionName.IndexOf(FamilySeparator) is var separatorIndex && separatorIndex >= 0
       ? permissionName[..separatorIndex]
       : permissionName;
 
-  private static string LabelOf(string groupKey) =>
-    _groupLabels.TryGetValue(groupKey, out var label)
-      ? label
-      : throw new InvalidOperationException(
-        $"The permission family '{groupKey}' has no display label. Add it to {nameof(PermissionGrouping)}'s group labels.");
+  /// <summary>
+  /// Turns a family prefix into its header. Hyphenated words become space-separated, each word is
+  /// capitalized, and the last one is pluralized, so <c>device-group</c> reads "Device Groups".
+  /// Nothing here is per-family, so a family introduced by a newer server gets the same header the
+  /// server's own build would produce.
+  /// </summary>
+  private static string LabelOf(string groupKey)
+  {
+    var words = groupKey.Split(FamilyWordSeparator, StringSplitOptions.RemoveEmptyEntries);
+
+    for (var i = 0; i < words.Length; i++)
+    {
+      words[i] = $"{char.ToUpperInvariant(words[i][0])}{words[i][1..]}";
+    }
+
+    if (words.Length > 0)
+    {
+      words[^1] = $"{words[^1]}s";
+    }
+
+    return string.Join(' ', words);
+  }
 }

@@ -1,6 +1,6 @@
 using ControlR.Libraries.Api.Contracts.Dtos.ServerApi.V1.PermissionAssignments;
 
-namespace ControlR.Web.Client.Components.Dialogs;
+namespace ControlR.Web.Client.ViewModels;
 
 /// <summary>
 /// A row in the permission-picker dropdown: either a non-selectable family header or a selectable
