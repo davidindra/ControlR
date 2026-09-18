@@ -19,7 +19,6 @@
   - You can now grant users and service accounts specific permissions, scoped to the whole tenant, a customer, a device group, or an individual device.
 - Existing roles get migrated to permission presets, which are bundles of related permissions that can be applied at once.
 - Added a Permissions page under Tenant Admin for managing who can do what.
-- Permission pickers list permissions in permission-name order, so related permissions appear together.
 - Added filters on the dashboard for customer and device group.
 - Added any/all match mode for filtering by tags and device groups.
 - Reworked how ungrouped/untagged device display is toggled.
@@ -57,7 +56,3 @@ None.
 - The value-carrying MVC error shortcuts (`BadRequest(value)`, `NotFound(value)`, `Conflict(value)`,
   `Unauthorized(value)`, `StatusCode(code, value)`) are banned under `Api/V1` by RS0030, so a new V1
   endpoint cannot reintroduce a bare-string error body. Use `Problem()` instead.
-- `PermissionGrouping` (ControlR.Web.Client) holds the display label of each permission family, the
-  segment of a permission name before the first `.`. It refuses to invent a label for a family it has
-  never seen. `PermissionGroupingTests` holds that map against the server's permission names, so a
-  new family has to be labelled deliberately rather than arrive in an "Other" bucket.
