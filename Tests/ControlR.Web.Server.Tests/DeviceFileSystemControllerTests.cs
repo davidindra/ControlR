@@ -740,7 +740,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
     var objectResult = Assert.IsType<ObjectResult>(result);
     Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
-    Assert.Equal("Error retrieving log files.", problem.Title);
+    Assert.Equal("Internal server error.", problem.Title);
     Assert.Equal("An error occurred while retrieving log files.", problem.Detail);
   }
 
@@ -1296,7 +1296,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
     Assert.Equal(StatusCodes.Status502BadGateway, objectResult.StatusCode);
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
     Assert.Equal(StatusCodes.Status502BadGateway, problem.Status);
-    Assert.Equal("No response from the remote device.", problem.Title);
+    Assert.Equal("Bad gateway.", problem.Title);
     Assert.Equal("No response received from device agent.", problem.Detail);
   }
 
@@ -1310,7 +1310,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
     Assert.Equal(StatusCodes.Status409Conflict, objectResult.StatusCode);
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
     Assert.Equal(StatusCodes.Status409Conflict, problem.Status);
-    Assert.Equal("The remote device could not complete the operation.", problem.Title);
+    Assert.Equal("Conflict.", problem.Title);
     Assert.Equal(expectedReason, problem.Detail);
   }
 

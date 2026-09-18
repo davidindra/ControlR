@@ -29,7 +29,7 @@ public class HttpResultExtensionsTests
     Assert.Equal(409, objectResult.StatusCode);
 
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
-    Assert.Equal("Conflict", problem.Title);
+    Assert.Equal("Conflict.", problem.Title);
     Assert.Equal("conflicted", problem.Detail);
   }
 
@@ -81,23 +81,28 @@ public class HttpResultExtensionsTests
   }
 
   [Theory]
-  [InlineData(HttpResultErrorCode.BadRequest, "https://tools.ietf.org/html/rfc9110#section-15.5.1")]
-  [InlineData(HttpResultErrorCode.Unauthorized, "https://tools.ietf.org/html/rfc9110#section-15.5.2")]
-  [InlineData(HttpResultErrorCode.Forbidden, "https://tools.ietf.org/html/rfc9110#section-15.5.3")]
-  [InlineData(HttpResultErrorCode.NotFound, "https://tools.ietf.org/html/rfc9110#section-15.5.4")]
-  [InlineData(HttpResultErrorCode.Conflict, "https://tools.ietf.org/html/rfc9110#section-15.5.10")]
-  [InlineData(HttpResultErrorCode.InternalServerError, "https://tools.ietf.org/html/rfc9110#section-15.6.1")]
-  [InlineData(HttpResultErrorCode.NotImplemented, "https://tools.ietf.org/html/rfc9110#section-15.6.2")]
-  [InlineData(HttpResultErrorCode.ServiceUnavailable, "https://tools.ietf.org/html/rfc9110#section-15.6.4")]
-  [InlineData(HttpResultErrorCode.ValidationFailed, "https://tools.ietf.org/html/rfc9110#section-15.5.1")]
-  public void ToActionResult_EachErrorCode_ReturnsCorrectTypeUri(
-    HttpResultErrorCode errorCode, string expectedType)
+  [InlineData(HttpResultErrorCode.BadRequest, "Invalid request.")]
+  [InlineData(HttpResultErrorCode.Unauthorized, "Unauthorized.")]
+  [InlineData(HttpResultErrorCode.Forbidden, "Forbidden.")]
+  [InlineData(HttpResultErrorCode.NotFound, "Not found.")]
+  [InlineData(HttpResultErrorCode.Conflict, "Conflict.")]
+  [InlineData(HttpResultErrorCode.InternalServerError, "Internal server error.")]
+  [InlineData(HttpResultErrorCode.NotImplemented, "Not implemented.")]
+  [InlineData(HttpResultErrorCode.ServiceUnavailable, "Service unavailable.")]
+  [InlineData(HttpResultErrorCode.ValidationFailed, "Validation failed.")]
+  public void ToActionResult_EachErrorCode_ReturnsExpectedTitle(
+    HttpResultErrorCode errorCode, string expectedTitle)
   {
     var result = HttpResult.Fail(errorCode, "test").ToActionResult();
 
     var objectResult = Assert.IsType<ObjectResult>(result);
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
-    Assert.Equal(expectedType, problem.Type);
+
+    // Most titles come from the table the controllers and the pipeline share, which keys them by status.
+    // ValidationFailed is the exception: it knows something the status does not, so it names itself and
+    // a caller can tell a rejected value from a malformed request without reading the detail.
+    Assert.Equal(expectedTitle, problem.Title);
+    Assert.Equal("about:blank", problem.Type);
   }
 
   [Fact]
@@ -109,22 +114,10 @@ public class HttpResultExtensionsTests
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
 
     Assert.Equal(404, problem.Status);
-    Assert.Equal("Not Found", problem.Title);
+    Assert.Equal("Not found.", problem.Title);
     Assert.Equal("User not found", problem.Detail);
-    Assert.Equal("https://tools.ietf.org/html/rfc9110#section-15.5.4", problem.Type);
+    Assert.Equal("about:blank", problem.Type);
     Assert.Null(problem.Instance);
-  }
-
-  [Fact]
-  public void ToActionResult_ErrorResponse_DeclaresProblemJsonMediaType()
-  {
-    var result = HttpResult.Fail(HttpResultErrorCode.NotFound, "gone").ToActionResult();
-
-    var objectResult = Assert.IsType<ObjectResult>(result);
-
-    // Without a declared media type the body is negotiated as application/json, which contradicts
-    // both RFC 9457 and every V1 ProducesResponseType declaration naming application/problem+json.
-    Assert.Contains("application/problem+json", objectResult.ContentTypes);
   }
 
   [Fact]

@@ -9,8 +9,9 @@ namespace ControlR.Web.Server.Tests.V1;
 /// <summary>
 /// Errors the pipeline produces before a controller runs. A request that matches no route, or that
 /// reaches an endpoint without credentials, never gets to an action, so there is no controller left
-/// to answer it. The status-pages branch registered in Program.cs is what puts a body on those
-/// responses; these tests hold it to the same RFC 9457 shape the controllers use.
+/// to answer it. <c>ApiProblemDetailsMiddleware</c> puts a body on those responses, and these tests
+/// hold it to the same RFC 9457 shape and the same title table the controllers use, so one status has
+/// one title no matter which component answered.
 /// </summary>
 public class V1ProblemDetailsMiddlewareTests(ITestOutputHelper testOutput)
 {
@@ -25,7 +26,7 @@ public class V1ProblemDetailsMiddlewareTests(ITestOutputHelper testOutput)
       TestContext.Current.CancellationToken);
 
     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    await AssertProblemBodyAsync(response, StatusCodes.Status401Unauthorized);
+    await AssertProblemBodyAsync(response, StatusCodes.Status401Unauthorized, "Unauthorized.");
   }
 
   [Fact]
@@ -39,7 +40,7 @@ public class V1ProblemDetailsMiddlewareTests(ITestOutputHelper testOutput)
       TestContext.Current.CancellationToken);
 
     Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    await AssertProblemBodyAsync(response, StatusCodes.Status404NotFound);
+    await AssertProblemBodyAsync(response, StatusCodes.Status404NotFound, "Not found.");
   }
 
   [Fact]
@@ -63,9 +64,14 @@ public class V1ProblemDetailsMiddlewareTests(ITestOutputHelper testOutput)
   }
 
   /// <summary>
-  /// Asserts the response is a problem+json document whose own status agrees with the status line.
+  /// Asserts the response is a problem+json document whose own status and table title agree with what
+  /// the status line says. The title is asserted by value rather than through the shared constants so
+  /// a change to the vocabulary has to be made here too.
   /// </summary>
-  private async Task AssertProblemBodyAsync(HttpResponseMessage response, int expectedStatus)
+  private async Task AssertProblemBodyAsync(
+    HttpResponseMessage response,
+    int expectedStatus,
+    string expectedTitle)
   {
     Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
 
@@ -77,7 +83,8 @@ public class V1ProblemDetailsMiddlewareTests(ITestOutputHelper testOutput)
 
     Assert.NotNull(problem);
     Assert.Equal(expectedStatus, problem.Status);
-    Assert.False(string.IsNullOrWhiteSpace(problem.Title));
+    Assert.Equal(expectedTitle, problem.Title);
+    Assert.Equal("about:blank", problem.Type);
   }
 
   /// <summary>
@@ -90,5 +97,8 @@ public class V1ProblemDetailsMiddlewareTests(ITestOutputHelper testOutput)
 
     [JsonPropertyName("title")]
     public string? Title { get; init; }
+
+    [JsonPropertyName("type")]
+    public string? Type { get; init; }
   }
 }

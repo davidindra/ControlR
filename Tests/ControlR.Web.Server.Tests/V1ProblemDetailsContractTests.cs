@@ -30,7 +30,7 @@ public class V1ProblemDetailsContractTests
 
     var (checkedResponses, offenders) = ReadV1ErrorResponses(documentPath);
 
-    // Guards against the test passing because it found nothing to check - a renamed document, or the
+    // Guards against the test passing because it found nothing to check. A renamed document, or the
     // V1 group moving off the /api/v1 prefix, would otherwise read as success.
     Assert.True(
       checkedResponses >= 100,

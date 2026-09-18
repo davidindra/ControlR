@@ -427,16 +427,16 @@ public class DeviceFileSystemController(
     if (outcome.Failure is FileSystemFailure.None)
     {
       // Reported success but carried no payload, which none of the payload-carrying operations do.
-      // Reaching here is a bug in this server rather than a device fault, so the title says
+      // Reaching here is a bug in this server rather than a device fault, so the detail says
       // unexpected response and does not claim the device could not be contacted.
       _logger.LogError(
         "A device file system operation reported success without a payload ({Outcome}).",
         outcome);
 
       return Problem(
-        detail: unexpectedFailureDetail,
+        detail: "The remote device returned an unexpected response.",
         statusCode: StatusCodes.Status500InternalServerError,
-        title: "The remote device returned an unexpected response.");
+        title: V1ProblemTitles.InternalServerError);
     }
 
     return outcome.Failure switch
@@ -452,19 +452,19 @@ public class DeviceFileSystemController(
       FileSystemFailure.RemoteFailure => Problem(
         detail: outcome.Reason,
         statusCode: StatusCodes.Status409Conflict,
-        title: "The remote device could not complete the operation."),
+        title: V1ProblemTitles.Conflict),
       FileSystemFailure.NoResponse => Problem(
         detail: "The device did not return a result.",
         statusCode: StatusCodes.Status502BadGateway,
-        title: "No response from the remote device."),
+        title: V1ProblemTitles.BadGateway),
       FileSystemFailure.Cancelled => Problem(
         detail: "The wait for the remote device was canceled.",
         statusCode: StatusCodes.Status408RequestTimeout,
-        title: "Request timed out."),
+        title: V1ProblemTitles.RequestTimedOut),
       FileSystemFailure.Unexpected => Problem(
         detail: unexpectedFailureDetail,
         statusCode: StatusCodes.Status500InternalServerError,
-        title: "Error contacting the remote device."),
+        title: V1ProblemTitles.InternalServerError),
       _ => throw new ArgumentOutOfRangeException(
         nameof(outcome),
         outcome.Failure,

@@ -3,7 +3,7 @@
 - ⚠️ You will need to log out and back in if you have "Remember Me" enabled. ⚠️
   - A pre-existing auth cookie will lack the new permission claims.
 - Failures from `/api/v1/*` endpoints now answer with an RFC 9457 `application/problem+json` body.
-- `POST /api/v1/test-email` answers a failed send with the status the failure deserves — 409 when email sending is switched off, 500 when the SMTP settings are missing, 503 when the SMTP server refused the message — instead of 500 for all three.
+- `POST /api/v1/test-email` answers a failed send with the status the failure deserves: 409 when email sending is switched off, 500 when the SMTP settings are missing, and 503 when the SMTP server refused the message.
 - Some of the routes and DTOs used in the `/api/v1/*` endpoints have been changed.
   - There should be no more breaking changes to the `/api/v1/*` endpoints after this release.
 - Although roles were migrated to permission presets, user tags that mapped users to devices were removed.

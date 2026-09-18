@@ -419,7 +419,7 @@ public partial class RemoteControlViewModel : ViewModelBase<RemoteControlView>, 
             break;
           }
 
-          // Single session - attempt automatic reconnection
+          // Single session, attempt automatic reconnection
           if (await StartRemoteControl(DesktopSessions[0].Session, true))
           {
             return true;

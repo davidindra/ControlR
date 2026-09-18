@@ -1,5 +1,6 @@
 using ControlR.Libraries.Api.Contracts.Dtos.HubDtos;
 using ControlR.Libraries.Api.Contracts.Hubs.Clients;
+using ControlR.Web.Server.Constants;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
@@ -77,7 +78,7 @@ public class DesktopPreviewController : ControllerBase
       return Problem(
         detail: "Device is not connected.",
         statusCode: StatusCodes.Status409Conflict,
-        title: "Desktop preview request failed");
+        title: V1ProblemTitles.Conflict);
     }
 
     var requestResult = await agentHub.Clients
@@ -94,7 +95,7 @@ public class DesktopPreviewController : ControllerBase
       return Problem(
         detail: "Desktop preview request returned no result.",
         statusCode: StatusCodes.Status503ServiceUnavailable,
-        title: "Desktop preview request failed");
+        title: V1ProblemTitles.ServiceUnavailable);
     }
 
     if (!requestResult.IsSuccess)
@@ -108,7 +109,7 @@ public class DesktopPreviewController : ControllerBase
       return Problem(
         detail: requestResult.Reason,
         statusCode: StatusCodes.Status503ServiceUnavailable,
-        title: "Desktop preview request failed");
+        title: V1ProblemTitles.ServiceUnavailable);
     }
 
     try

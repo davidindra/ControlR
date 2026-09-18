@@ -1,6 +1,7 @@
 using ControlR.Libraries.Api.Contracts.Dtos.HubDtos;
 using ControlR.Libraries.Api.Contracts.Hubs.Clients;
 using ControlR.Libraries.Shared.Helpers;
+using ControlR.Web.Server.Constants;
 using ControlR.Web.Server.Services.DeviceFileSystem;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
@@ -216,7 +217,7 @@ public class DeviceFileSystemController : ControllerBase
   }
 
   [HttpPost("contents")]
-  [ApiDeprecated("/api/v1/device-file-system/contents?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/contents with a required tenantId. The response is the same listing under the V1 type names. V1 answers a canceled wait with 408 carrying a body rather than an empty 408, and answers every failure with a ProblemDetails body, where this endpoint answers some of them with bare strings.")]
+  [ApiDeprecated("/api/v1/device-file-system/contents?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/contents with a required tenantId. The response is the same listing under the V1 type names. V1 answers every failure with a ProblemDetails body, where this endpoint answers some of them with bare strings.")]
   public async Task<IActionResult> GetDirectoryContents(
     [FromBody] InternalDtos.GetDirectoryContentsRequestDto request,
     [FromServices] IDeviceFileSystemService deviceFileSystem,
@@ -301,7 +302,7 @@ public class DeviceFileSystemController : ControllerBase
         return Problem(
           detail: streamResult.Reason,
           statusCode: StatusCodes.Status500InternalServerError,
-          title: "A failure occurred on the remote device.");
+          title: V1ProblemTitles.InternalServerError);
       }
 
       var fileName = Path.GetFileName(filePath);
@@ -350,7 +351,7 @@ public class DeviceFileSystemController : ControllerBase
       FileSystemFailure.Cancelled or FileSystemFailure.Unexpected => Problem(
         detail: "An error occurred while retrieving log files.",
         statusCode: StatusCodes.Status500InternalServerError,
-        title: "Error retrieving log files."),
+        title: V1ProblemTitles.InternalServerError),
       _ => Ok(outcome.Value),
     };
   }
@@ -565,7 +566,7 @@ public class DeviceFileSystemController : ControllerBase
       FileSystemFailure.Cancelled => Problem(
         detail: "The wait for the remote device was canceled.",
         statusCode: StatusCodes.Status408RequestTimeout,
-        title: "Request timed out."),
+        title: V1ProblemTitles.RequestTimedOut),
       FileSystemFailure.Unexpected =>
         StatusCode(500, "An error occurred while validating the file path."),
       _ => Ok(outcome.Value),
@@ -681,7 +682,7 @@ public class DeviceFileSystemController : ControllerBase
     return Problem(
       detail: NoResponseMessage,
       statusCode: StatusCodes.Status502BadGateway,
-      title: "No response from the remote device.");
+      title: V1ProblemTitles.BadGateway);
   }
 
   private ObjectResult RemoteFailureProblem(string? reason)
@@ -689,6 +690,6 @@ public class DeviceFileSystemController : ControllerBase
     return Problem(
       detail: reason,
       statusCode: StatusCodes.Status409Conflict,
-      title: "The remote device could not complete the operation.");
+      title: V1ProblemTitles.Conflict);
   }
 }

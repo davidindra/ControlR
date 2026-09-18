@@ -75,7 +75,7 @@ internal static class HttpExtensions
       }
       catch
       {
-        // The body is not a JSON object - an HTML error page, a plain-text status page, or one of
+        // The body is not a JSON object: an HTML error page, a plain-text status page, or one of
         // the bare JSON strings the deprecated /api/* endpoints return for some failures.
       }
 

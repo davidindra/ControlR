@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ControlR.Web.Server.Constants;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,9 +23,9 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger) : I
     var problemDetails = new ProblemDetails
     {
       Status = StatusCodes.Status500InternalServerError,
-      Title = "An unexpected error occurred.",
+      Title = V1ProblemTitles.ForStatusCode(StatusCodes.Status500InternalServerError),
       Detail = "An unexpected error occurred.",
-      Type = "https://tools.ietf.org/html/rfc9110#section-15.6.1",
+      Type = V1ProblemTitles.ProblemType,
     };
     problemDetails.Extensions["traceId"] = httpContext.TraceIdentifier;
 

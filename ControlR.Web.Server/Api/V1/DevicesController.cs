@@ -216,7 +216,7 @@ public class DevicesController(IDeviceAccessScopeResolver deviceAccessScopeResol
       return Problem(
         detail: "Failed to retrieve desktop sessions from the agent.",
         statusCode: StatusCodes.Status500InternalServerError,
-        title: "Agent communication failed");
+        title: V1ProblemTitles.InternalServerError);
     }
   }
 

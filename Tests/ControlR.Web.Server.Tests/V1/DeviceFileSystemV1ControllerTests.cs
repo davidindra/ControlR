@@ -111,10 +111,12 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
 
       using var response = await httpClient.SendAsync(request, TestContext.Current.CancellationToken);
       Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+      Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
 
       var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(
         TestContext.Current.CancellationToken);
-      Assert.Equal("Invalid tenant ID.", problem?.Title);
+      Assert.Equal("Invalid request.", problem?.Title);
+      Assert.Equal("tenantId must be a non-empty GUID.", problem?.Detail);
     }
   }
 
@@ -817,7 +819,8 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     var objectResult = Assert.IsType<ObjectResult>(result);
     Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
-    Assert.Equal("The remote device returned an unexpected response.", problem.Title);
+    Assert.Equal("Internal server error.", problem.Title);
+    Assert.Equal("The remote device returned an unexpected response.", problem.Detail);
   }
 
   [Fact]
@@ -1132,7 +1135,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     var objectResult = Assert.IsType<ObjectResult>(result);
     Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
-    Assert.Equal("Error contacting the remote device.", problem.Title);
+    Assert.Equal("Internal server error.", problem.Title);
   }
 
   [Fact]
@@ -1492,7 +1495,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     Assert.Equal(StatusCodes.Status409Conflict, objectResult.StatusCode);
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
     Assert.Equal(StatusCodes.Status409Conflict, problem.Status);
-    Assert.Equal("The remote device could not complete the operation.", problem.Title);
+    Assert.Equal("Conflict.", problem.Title);
     return problem;
   }
 
@@ -1505,7 +1508,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     Assert.Equal(StatusCodes.Status502BadGateway, objectResult.StatusCode);
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
     Assert.Equal(StatusCodes.Status502BadGateway, problem.Status);
-    Assert.Equal("No response from the remote device.", problem.Title);
+    Assert.Equal("Bad gateway.", problem.Title);
     return problem;
   }
 
