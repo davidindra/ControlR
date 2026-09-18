@@ -258,11 +258,38 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await harness.Controller.DeletePath(
       harness.Device.Id,
-      new InternalDtos.FileDeleteRequestDto(harness.Device.Id, "/parent/file.txt", false),
+      new InternalDtos.DeletePathRequestDto(harness.Device.Id, "/parent/file.txt"),
       harness.DeviceFileSystem,
       TestContext.Current.CancellationToken);
 
     Assert.IsType<ForbidResult>(result);
+  }
+
+  [Fact]
+  public async Task DeletePath_WhenDeleteSucceeds_SendsOnlyThePathInTheHubPayload()
+  {
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    using var scope = testApp.CreateScope();
+    var harness = await Harness.CreateAsync(scope, "dfs-delete-payload@test.local");
+    var forwardedDtos = new List<FileDeleteHubDto>();
+    harness.AgentClient
+      .Setup(x => x.DeleteFile(It.IsAny<FileDeleteHubDto>()))
+      .Callback<FileDeleteHubDto>(dto => forwardedDtos.Add(dto))
+      .ReturnsAsync(HubResult.Ok());
+
+    var result = await harness.Controller.DeletePath(
+      harness.Device.Id,
+      new InternalDtos.DeletePathRequestDto(harness.Device.Id, "/parent/some-dir"),
+      harness.DeviceFileSystem,
+      TestContext.Current.CancellationToken);
+
+    Assert.IsType<OkObjectResult>(result);
+
+    // The agent stats the path itself and picks directory or file deletion, so the hub payload carries
+    // nothing but the path.
+    var forwarded = Assert.Single(forwardedDtos);
+    Assert.Equal(["TargetPath"], forwarded.GetType().GetProperties().Select(x => x.Name));
+    Assert.Equal("/parent/some-dir", forwarded.TargetPath);
   }
 
   [Fact]
@@ -274,7 +301,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await harness.Controller.DeletePath(
       Guid.NewGuid(),
-      new InternalDtos.FileDeleteRequestDto(Guid.NewGuid(), "/parent/file.txt", false),
+      new InternalDtos.DeletePathRequestDto(Guid.NewGuid(), "/parent/file.txt"),
       harness.DeviceFileSystem,
       TestContext.Current.CancellationToken);
 
@@ -291,7 +318,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await harness.Controller.DeletePath(
       harness.Device.Id,
-      new InternalDtos.FileDeleteRequestDto(harness.Device.Id, "/parent/file.txt", false),
+      new InternalDtos.DeletePathRequestDto(harness.Device.Id, "/parent/file.txt"),
       harness.DeviceFileSystem,
       TestContext.Current.CancellationToken);
 
@@ -309,12 +336,12 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await harness.Controller.DeletePath(
       harness.Device.Id,
-      new InternalDtos.FileDeleteRequestDto(harness.Device.Id, "", false),
+      new InternalDtos.DeletePathRequestDto(harness.Device.Id, ""),
       harness.DeviceFileSystem,
       TestContext.Current.CancellationToken);
 
     var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-    Assert.Equal("File path is required.", badRequest.Value);
+    Assert.Equal("A path is required.", badRequest.Value);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -330,7 +357,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await harness.Controller.DeletePath(
       harness.Device.Id,
-      new InternalDtos.FileDeleteRequestDto(harness.Device.Id, "/parent/file.txt", false),
+      new InternalDtos.DeletePathRequestDto(harness.Device.Id, "/parent/file.txt"),
       harness.DeviceFileSystem,
       TestContext.Current.CancellationToken);
 
@@ -350,7 +377,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await harness.Controller.DeletePath(
       harness.Device.Id,
-      new InternalDtos.FileDeleteRequestDto(harness.Device.Id, "/parent/file.txt", false),
+      new InternalDtos.DeletePathRequestDto(harness.Device.Id, "/parent/file.txt"),
       harness.DeviceFileSystem,
       TestContext.Current.CancellationToken);
 
@@ -369,7 +396,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await harness.Controller.DeletePath(
       harness.Device.Id,
-      new InternalDtos.FileDeleteRequestDto(harness.Device.Id, "/parent/file.txt", false),
+      new InternalDtos.DeletePathRequestDto(harness.Device.Id, "/parent/file.txt"),
       harness.DeviceFileSystem,
       TestContext.Current.CancellationToken);
 
@@ -383,7 +410,7 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
     Assert.False(payloadType.IsPublic);
     var propertyNames = payloadType.GetProperties().Select(x => x.Name).ToArray();
     Assert.Equal(["Message", "FilePath"], propertyNames);
-    Assert.Equal("File deletion completed", payloadType.GetProperty("Message")?.GetValue(payload));
+    Assert.Equal("Path deletion completed", payloadType.GetProperty("Message")?.GetValue(payload));
     Assert.Equal("/parent/file.txt", payloadType.GetProperty("FilePath")?.GetValue(payload));
     harness.AgentClient.Verify(
       x => x.DeleteFile(It.Is<FileDeleteHubDto>(dto => dto.TargetPath == "/parent/file.txt")),
@@ -402,40 +429,13 @@ public class DeviceFileSystemControllerTests(ITestOutputHelper testOutput)
 
     var result = await harness.Controller.DeletePath(
       harness.Device.Id,
-      new InternalDtos.FileDeleteRequestDto(harness.Device.Id, "/parent/file.txt", false),
+      new InternalDtos.DeletePathRequestDto(harness.Device.Id, "/parent/file.txt"),
       harness.DeviceFileSystem,
       TestContext.Current.CancellationToken);
 
     var objectResult = Assert.IsType<ObjectResult>(result);
     Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
-    Assert.Equal("An error occurred during file deletion.", objectResult.Value);
-  }
-
-  [Fact]
-  public async Task DeletePath_WhenRequestMarksPathAsDirectory_ForwardsOnlyThePathToTheAgent()
-  {
-    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
-    using var scope = testApp.CreateScope();
-    var harness = await Harness.CreateAsync(scope, "dfs-delete-isdirectory@test.local");
-    var forwardedDtos = new List<FileDeleteHubDto>();
-    harness.AgentClient
-      .Setup(x => x.DeleteFile(It.IsAny<FileDeleteHubDto>()))
-      .Callback<FileDeleteHubDto>(dto => forwardedDtos.Add(dto))
-      .ReturnsAsync(HubResult.Ok());
-
-    var result = await harness.Controller.DeletePath(
-      harness.Device.Id,
-      new InternalDtos.FileDeleteRequestDto(harness.Device.Id, "/parent/some-dir", IsDirectory: true),
-      harness.DeviceFileSystem,
-      TestContext.Current.CancellationToken);
-
-    Assert.IsType<OkObjectResult>(result);
-
-    // FileDeleteRequestDto.IsDirectory has no counterpart on FileDeleteHubDto, so the flag is
-    // dropped at the controller boundary. The agent only ever receives the path.
-    var forwarded = Assert.Single(forwardedDtos);
-    Assert.Equal(["TargetPath"], forwarded.GetType().GetProperties().Select(x => x.Name));
-    Assert.Equal("/parent/some-dir", forwarded.TargetPath);
+    Assert.Equal("An error occurred during path deletion.", objectResult.Value);
   }
 
   [Fact]
