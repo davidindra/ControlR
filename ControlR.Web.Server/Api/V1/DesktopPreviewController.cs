@@ -2,6 +2,7 @@ using Asp.Versioning;
 using ControlR.Libraries.Api.Contracts.Dtos.HubDtos;
 using ControlR.Libraries.Api.Contracts.Hubs.Clients;
 using ControlR.Web.Server.Constants;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
@@ -35,6 +36,7 @@ public class DesktopPreviewController(
   /// single image, so there is no length to state up front.
   /// </summary>
   [HttpGet("{deviceId:guid}/{targetProcessId:int}")]
+  [DisableRequestTimeout]
   [ProducesResponseType(StatusCodes.Status200OK)]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]

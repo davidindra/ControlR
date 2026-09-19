@@ -21,6 +21,18 @@ namespace ControlR.Web.Server.Services.DeviceFileSystem;
 /// </remarks>
 public interface IDeviceFileSystemService
 {
+
+  /// <summary>
+  /// Applies <see cref="UploadFile" />'s guards without starting a transfer, so a caller holding a
+  /// request body can read it only after the device accepted the upload. UploadFile guards again, so
+  /// it stays a complete operation on its own.
+  /// </summary>
+  Task<FileSystemOutcome> AuthorizeUpload(
+    ClaimsPrincipal user,
+    Guid deviceId,
+    CancellationToken cancellationToken,
+    Guid? expectedTenantId = null);
+
   /// <summary>
   /// Asks the agent to create a directory under <see cref="CreateDirectoryHubDto.ParentPath" />. The
   /// agent's own failure text is reported as <see cref="FileSystemFailure.RemoteFailure" />, and an
@@ -164,6 +176,22 @@ public class DeviceFileSystemService(
   private readonly IAuthorizationService _authorizationService = authorizationService;
   private readonly IHubStreamStore _hubStreamStore = hubStreamStore;
   private readonly ILogger<DeviceFileSystemService> _logger = logger;
+
+  public async Task<FileSystemOutcome> AuthorizeUpload(
+    ClaimsPrincipal user,
+    Guid deviceId,
+    CancellationToken cancellationToken,
+    Guid? expectedTenantId = null)
+  {
+    var guarded = await Guard(
+      user,
+      deviceId,
+      DeviceResourcePolicies.FileSystemTransferUpload,
+      expectedTenantId,
+      cancellationToken);
+
+    return new(guarded.Failure, guarded.Reason);
+  }
 
   public async Task<FileSystemOutcome> CreateDirectory(
     ClaimsPrincipal user,
@@ -783,8 +811,6 @@ public class DeviceFileSystemService(
         .Client(device.ConnectionId)
         .DownloadFileFromViewer(uploadRequest);
 
-      await writeToStreamTask.WaitAsync(cancellationToken);
-
       if (result is null)
       {
         _logger.LogWarning("No response received from agent for file upload of {FileName} to device {DeviceId}",
@@ -798,6 +824,11 @@ public class DeviceFileSystemService(
           fileName, deviceId, result.Reason);
         return new(FileSystemFailure.RemoteFailure, result.Reason);
       }
+
+      // Only an agent that accepted is draining the channel. Waiting for the copy before that answer
+      // parks the request forever, because the writer stops once the bounded channel fills and
+      // nothing is left to read it.
+      await writeToStreamTask;
 
       _logger.LogInformation("File upload completed for {FileName} to device {DeviceId}",
         fileName, deviceId);

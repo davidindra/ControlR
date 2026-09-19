@@ -87,8 +87,9 @@ public interface IDeviceFileSystemApi
     CancellationToken cancellationToken = default);
 
   /// <summary>
-  /// Sends one file to the device, which writes it into the named directory. The file is streamed from
-  /// <paramref name="fileStream" />, so the caller keeps ownership of it and disposes it.
+  /// Sends one file to the device, which writes it into the named directory. The call closes
+  /// <paramref name="fileStream" />, because the multipart body takes it over, so a caller that wants
+  /// to send the same file twice has to open it twice.
   /// </summary>
   [ApiRoute($"{HttpConstants.V1.DeviceFileSystemEndpoint}/upload/{{deviceId}}?tenantId={{tenantId}}", "POST")]
   Task<ApiResult<DeviceFileUploadResponseDto>> UploadDeviceFile(

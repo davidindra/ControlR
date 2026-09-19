@@ -2,6 +2,7 @@ using Asp.Versioning;
 using ControlR.Libraries.Api.Contracts.Dtos.ServerApi.V1.DeviceFileSystem;
 using ControlR.Libraries.Shared.Helpers;
 using ControlR.Web.Server.Services.DeviceFileSystem;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
@@ -124,6 +125,7 @@ public class DeviceFileSystemController(
   /// with the agent's own display name in the <c>Content-Disposition</c> header.
   /// </summary>
   [HttpPost("download-archive/{deviceId:guid}")]
+  [DisableRequestTimeout]
   [ProducesResponseType(StatusCodes.Status200OK)]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
@@ -184,6 +186,7 @@ public class DeviceFileSystemController(
   /// agent's own display name in the <c>Content-Disposition</c> header.
   /// </summary>
   [HttpGet("download/{deviceId:guid}")]
+  [DisableRequestTimeout]
   [ProducesResponseType(StatusCodes.Status200OK)]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
@@ -271,10 +274,12 @@ public class DeviceFileSystemController(
   }
 
   /// <summary>
-  /// Streams the contents of one log file as text. The response is the text itself, with the file's
-  /// name in the <c>Content-Disposition</c> header.
+  /// Streams one file's contents as text, named by <paramref name="filePath"/>. The agent answers with
+  /// any path it can read, so the caller needs the device's log-read permission rather than a
+  /// directory listing first.
   /// </summary>
   [HttpGet("logs/{deviceId:guid}/contents")]
+  [DisableRequestTimeout]
   [ProducesResponseType(StatusCodes.Status200OK)]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
@@ -481,6 +486,7 @@ public class DeviceFileSystemController(
   /// </summary>
   [HttpPost("upload/{deviceId:guid}")]
   [DisableRequestSizeLimit]
+  [DisableRequestTimeout]
   [ProducesResponseType<DeviceFileUploadResponseDto>(StatusCodes.Status200OK)]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
@@ -499,6 +505,20 @@ public class DeviceFileSystemController(
     if (!User.TryResolveTenantId(tenantId, out var resolvedTenantId))
     {
       return Forbid();
+    }
+
+    // Reading the form is what puts the body on disk, so the device has to have accepted the upload
+    // first. Without this, any authenticated principal can spool a request body against a device the
+    // caller cannot touch. UploadFile guards again, because it stays a complete operation.
+    var authorization = await _deviceFileSystem.AuthorizeUpload(
+      User,
+      deviceId,
+      cancellationToken,
+      resolvedTenantId);
+
+    if (!authorization.Succeeded)
+    {
+      return MapFailure(authorization, "An error occurred during file upload.");
     }
 
     if (!Request.HasFormContentType)

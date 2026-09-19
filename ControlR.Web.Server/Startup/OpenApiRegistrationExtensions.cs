@@ -61,6 +61,7 @@ public static class OpenApiRegistrationExtensions
 
   private static void AddSharedTransformers(OpenApiOptions options)
   {
+    options.AddDocumentTransformer<BinaryResponseTransformer>();
     options.AddDocumentTransformer<FileUploadTransformer>();
     options.AddDocumentTransformer<IdentityApiOpenApiTransformer>();
     options.AddDocumentTransformer<ApiProblemDetailsTransformer>();

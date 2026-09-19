@@ -1315,7 +1315,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "image/jpeg": { }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -1791,7 +1794,10 @@
         },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/octet-stream": { }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -1941,7 +1947,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/octet-stream": { }
+            }
           },
           "400": {
             "description": "Bad Request",
@@ -2252,7 +2261,10 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "text/plain": { }
+            }
           },
           "400": {
             "description": "Bad Request",

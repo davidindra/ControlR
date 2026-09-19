@@ -1894,10 +1894,11 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
 
   /// <summary>
   /// The caller holds every device file-system permission except the one this action applies, so a
-  /// refusal can only come from the <c>FileSystemTransferUpload</c> policy.
+  /// refusal can only come from the <c>FileSystemTransferUpload</c> policy. The body is unreadable on
+  /// purpose: reading it is what spools an upload to server disk, and only the guard may come first.
   /// </summary>
   [Fact]
-  public async Task UploadFile_WhenCallerLacksTransferUpload_Forbids()
+  public async Task UploadFile_WhenCallerLacksTransferUpload_ForbidsWithoutReadingTheBody()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.CreateScope();
@@ -1905,7 +1906,10 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       scope,
       "v1-dfs-upload-no-perm@test.local",
       PermissionNames.DeviceFileSystemTransferUpload);
-    SetUploadForm(harness, "installer.msi", [9, 8, 7], "/incoming", overwrite: false);
+    var request = harness.Controller.HttpContext.Request;
+    request.ContentType = "multipart/form-data; boundary=----controlr-test-boundary";
+    request.ContentLength = 64;
+    request.Body = new UnreadableBody();
 
     var result = await harness.Controller.UploadFile(
       harness.Device.Id,
@@ -1998,6 +2002,37 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       TestContext.Current.CancellationToken);
 
     AssertBadRequest(harness, result);
+  }
+
+  /// <summary>
+  /// The channel between the request body and the agent holds ten 80 KB chunks, so a larger body stops
+  /// being read the moment the channel fills. An agent that refused without pulling anything has to be
+  /// answered before the copy is awaited, or nothing is left to drain it and the wait never ends.
+  /// </summary>
+  [Fact]
+  public async Task UploadFile_WhenTheAgentRefusesAfterTheChannelFills_ReturnsConflictWithoutWaiting()
+  {
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    using var scope = testApp.CreateScope();
+    var harness = await Harness.CreateAsync(scope, "v1-dfs-upload-refused-full@test.local");
+    SetUploadForm(harness, "big.bin", new byte[1024 * 1024], "/incoming", overwrite: false);
+    harness.AgentClient
+      .Setup(x => x.DownloadFileFromViewer(It.IsAny<FileUploadHubDto>()))
+      .ReturnsAsync(HubResult.Fail("file already exists"));
+
+    // Bounded so that a regression answers through the cancellation branch instead of wedging the run.
+    using var waitLimit = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+    using var requestCts = CancellationTokenSource.CreateLinkedTokenSource(
+      waitLimit.Token,
+      TestContext.Current.CancellationToken);
+
+    var result = await harness.Controller.UploadFile(
+      harness.Device.Id,
+      harness.Tenant.Id,
+      requestCts.Token);
+
+    var problem = AssertDeviceRefusal(result);
+    Assert.Equal("file already exists", problem.Detail);
   }
 
   [Fact]
@@ -2594,5 +2629,42 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
       agentHub.Setup(x => x.Clients).Returns(hubClients.Object);
       return agentHub;
     }
+  }
+
+  /// <summary>
+  /// A request body that fails the moment anything reads it, so a test can tell an action that
+  /// authorized first from one that spooled the upload before asking.
+  /// </summary>
+  private sealed class UnreadableBody : Stream
+  {
+    public override bool CanRead => true;
+    public override bool CanSeek => false;
+    public override bool CanWrite => false;
+    public override long Length => throw BodyRead();
+    public override long Position
+    {
+      get => throw BodyRead();
+      set => throw BodyRead();
+    }
+
+    public override void Flush()
+    {
+    }
+
+    public override int Read(byte[] buffer, int offset, int count) => throw BodyRead();
+
+    public override int Read(Span<byte> buffer) => throw BodyRead();
+
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw BodyRead();
+
+    public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => throw BodyRead();
+
+    public override long Seek(long offset, SeekOrigin origin) => throw BodyRead();
+
+    public override void SetLength(long value) => throw BodyRead();
+
+    public override void Write(byte[] buffer, int offset, int count) => throw BodyRead();
+
+    private static IOException BodyRead() => new("The request body was read.");
   }
 }
