@@ -2035,6 +2035,33 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     Assert.Equal("file already exists", problem.Detail);
   }
 
+  /// <summary>
+  /// A chunked upload declares no length, so the declared-length fast-fail never fires. The limit is
+  /// the uploaded part's own size, which the handler has to answer 413 for whatever the client
+  /// declared, and it has to answer before the agent is asked to accept anything.
+  /// </summary>
+  [Fact]
+  public async Task UploadFile_WhenTheBodyExceedsTheLimitWithoutAContentLength_ReturnsRequestEntityTooLarge()
+  {
+    await using var testApp = await TestAppBuilder.CreateTestApp(
+      _testOutput,
+      new Dictionary<string, string?> { ["AppOptions:MaxFileTransferSize"] = "2" });
+    using var scope = testApp.CreateScope();
+    var harness = await Harness.CreateAsync(scope, "v1-dfs-upload-chunked-toolarge@test.local");
+    SetUploadForm(harness, "installer.msi", [9, 8, 7], "/incoming", overwrite: false);
+
+    // Chunked transfer encoding: the body is present, its length is not.
+    harness.Controller.HttpContext.Request.ContentLength = null;
+
+    var result = await harness.Controller.UploadFile(
+      harness.Device.Id,
+      harness.Tenant.Id,
+      TestContext.Current.CancellationToken);
+
+    AssertTransferTooLarge(result);
+    harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
+  }
+
   [Fact]
   public async Task UploadFile_WhenTheCallerNamesAnotherTenant_Forbids()
   {

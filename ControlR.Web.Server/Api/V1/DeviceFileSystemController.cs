@@ -541,6 +541,13 @@ public class DeviceFileSystemController(
       return InvalidRequest("A file is required.");
     }
 
+    // The declared length above is a fast-fail before the body is spooled. A chunked upload declares
+    // nothing, so the part's own length is what keeps the limit true for every transfer encoding.
+    if (maxFileSize > 0 && file.Length > maxFileSize)
+    {
+      return TransferTooLarge("The upload is larger than the server's transfer limit.");
+    }
+
     if (string.IsNullOrWhiteSpace(targetSaveDirectory))
     {
       return InvalidRequest("A target save directory is required.");
