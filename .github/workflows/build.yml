@@ -1019,7 +1019,7 @@ jobs:
             "wwwroot/downloads/osx-arm64/$env:BRAND_KEY.Agent.bundle.zip",
             "wwwroot/downloads/osx-x64/$env:BRAND_KEY.Agent.Installer",
             "wwwroot/downloads/osx-x64/$env:BRAND_KEY.Agent.bundle.zip",
-            "lib/monaco-editor/min/vs/editor/editor.main.js",
+            "wwwroot/lib/monaco-editor/min/vs/editor/editor.main.js",
             "novnc/vnc.html"
           )
           foreach ($runtime in $runtimes) {

@@ -30,7 +30,7 @@ runs:
         STATIC_PATHS=(
           "wwwroot/downloads/Version.txt"
           "wwwroot/downloads/release-notes.md"
-          "lib/monaco-editor/min/vs/editor/editor.main.js"
+          "wwwroot/lib/monaco-editor/min/vs/editor/editor.main.js"
           "novnc/vnc.html"
         )
 
