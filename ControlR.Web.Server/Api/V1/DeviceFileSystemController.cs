@@ -4,7 +4,6 @@ using ControlR.Libraries.Shared.Helpers;
 using ControlR.Web.Server.Services.DeviceFileSystem;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using ControlR.Web.Server.Constants;
 
