@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Threading.Channels;
 using ControlR.Libraries.Api.Contracts.Dtos.HubDtos;
 using ControlR.Libraries.Api.Contracts.Hubs.Clients;
 using Microsoft.AspNetCore.SignalR;
@@ -815,6 +816,7 @@ public class DeviceFileSystemService(
       {
         _logger.LogWarning("No response received from agent for file upload of {FileName} to device {DeviceId}",
           fileName, deviceId);
+        await AbandonUpload(writeToStreamTask, signaler);
         return new(FileSystemFailure.NoResponse, null);
       }
 
@@ -822,6 +824,7 @@ public class DeviceFileSystemService(
       {
         _logger.LogWarning("File upload request failed for {FileName} to device {DeviceId}: {Reason}",
           fileName, deviceId, result.Reason);
+        await AbandonUpload(writeToStreamTask, signaler);
         return new(FileSystemFailure.RemoteFailure, result.Reason);
       }
 
@@ -895,6 +898,25 @@ public class DeviceFileSystemService(
       _logger.LogError(ex, "Error validating file path {FileName} in {DirectoryPath} on device {DeviceId}",
         request.FileName, request.DirectoryPath, deviceId);
       return new(FileSystemFailure.Unexpected, ex.Message, null);
+    }
+  }
+
+  /// <summary>
+  /// Ends an upload the agent will not read. Once the agent has answered no there is nothing left to
+  /// drain the channel, so the copy has to be stopped and its fault observed rather than left running
+  /// against a channel nobody reads.
+  /// </summary>
+  private static async Task AbandonUpload(Task copyTask, HubStreamSignaler<byte[]> signaler)
+  {
+    signaler.Dispose();
+
+    try
+    {
+      await copyTask;
+    }
+    catch (Exception ex) when (ex is ChannelClosedException or OperationCanceledException)
+    {
+      // The expected end of a copy whose reader is gone.
     }
   }
 

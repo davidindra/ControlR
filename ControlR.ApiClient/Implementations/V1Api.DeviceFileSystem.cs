@@ -61,16 +61,23 @@ internal partial class V1Api
         Content = JsonContent.Create(request)
       };
 
-      // The response is not disposed here. ResponseStream owns it, because the caller reads the body
-      // after this method returns.
+      // ResponseStream owns the response, because the caller reads the body after this method returns.
+      // A response that never becomes a ResponseStream is this method's to release.
       var response = await _client.HttpClient.SendAsync(
         requestMessage,
         HttpCompletionOption.ResponseHeadersRead,
         cancellationToken);
-      await response.EnsureSuccessStatusCodeWithDetails();
-
-      var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-      return new ResponseStream(response, stream);
+      try
+      {
+        await response.EnsureSuccessStatusCodeWithDetails();
+        var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        return new ResponseStream(response, stream);
+      }
+      catch
+      {
+        response.Dispose();
+        throw;
+      }
     });
   }
 
@@ -87,10 +94,17 @@ internal partial class V1Api
         $"{HttpConstants.V1.DeviceFileSystemEndpoint}/download/{deviceId}?tenantId={tenantId}&filePath={encodedFilePath}",
         HttpCompletionOption.ResponseHeadersRead,
         cancellationToken);
-      await response.EnsureSuccessStatusCodeWithDetails();
-
-      var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-      return new ResponseStream(response, stream);
+      try
+      {
+        await response.EnsureSuccessStatusCodeWithDetails();
+        var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        return new ResponseStream(response, stream);
+      }
+      catch
+      {
+        response.Dispose();
+        throw;
+      }
     });
   }
 
