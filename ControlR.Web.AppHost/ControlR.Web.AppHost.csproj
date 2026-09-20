@@ -14,6 +14,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\ControlR.Agent\ControlR.Agent.csproj" />
+		<ProjectReference Include="..\ControlR.DesktopClient\ControlR.DesktopClient.csproj" />
 		<ProjectReference Include="..\ControlR.Web.Server\ControlR.Web.Server.csproj" />
 	</ItemGroup>
 	<ItemGroup>

@@ -29,10 +29,17 @@ var web = builder
 
 var webEndpoint = web.GetEndpoint("http");
 
-builder
+var agent = builder
   .AddProject<Projects.ControlR_Agent>(ServiceNames.ControlrAgent, "Run")
   .WithEnvironment("AppOptions__ServerUri", webEndpoint)
   .WaitFor(web)
+  .ExcludeFromManifest();
+
+// The agent's desktop client watcher skips launching in debug mode, so the AppHost starts it
+// the way the Full Stack IDE profile does. It retries the agent's pipe for 60s before exiting.
+builder
+  .AddProject<Projects.ControlR_DesktopClient>(ServiceNames.DesktopClient, "Run")
+  .WaitFor(agent)
   .ExcludeFromManifest();
 
 builder.Build().Run();
