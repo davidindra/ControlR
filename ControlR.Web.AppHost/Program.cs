@@ -7,19 +7,21 @@ var pgPassword = builder.AddParameter("PgPassword", true);
 var pgDataVolume = builder.AddParameter("PgDataVolume", false);
 var volumeName = await pgDataVolume.Resource.GetValueAsync(CancellationToken.None) ?? "controlr-data";
 
+// 5432 belongs to the docker-compose postgres, whose containers persist past a debug session.
 var postgres = builder
-    .AddPostgres(ServiceNames.Postgres, pgUser, pgPassword, port: 5432)
+    .AddPostgres(ServiceNames.Postgres, pgUser, pgPassword, port: 5434)
     .WithLifetime(ContainerLifetime.Persistent)
     .WithDataVolume(volumeName)
     .ExcludeFromManifest();
 
-var pgHost = postgres.GetEndpoint("tcp");
+var pgEndpoint = postgres.GetEndpoint("tcp");
 
 var web = builder
     .AddProject<Projects.ControlR_Web_Server>(ServiceNames.Controlr, launchProfileName: "https")
     .WithEnvironment("POSTGRES_USER", pgUser)
     .WithEnvironment("POSTGRES_PASSWORD", pgPassword)
-    .WithEnvironment("ControlR_POSTGRES_HOST", pgHost)
+    .WithEnvironment("ControlR_POSTGRES_HOST", pgEndpoint.Property(EndpointProperty.Host))
+    .WithEnvironment("ControlR_POSTGRES_PORT", pgEndpoint.Property(EndpointProperty.Port))
     .WithReference(postgres)
     .WaitFor(postgres);
 
