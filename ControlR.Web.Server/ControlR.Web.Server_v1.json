@@ -1390,8 +1390,8 @@
               }
             }
           },
-          "503": {
-            "description": "Service Unavailable",
+          "502": {
+            "description": "Bad Gateway",
             "content": {
               "application/problem+json": {
                 "schema": {

@@ -46,7 +46,7 @@ public class DesktopPreviewController(
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status408RequestTimeout, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError, "application/problem+json")]
-  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable, "application/problem+json")]
+  [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway, "application/problem+json")]
   public async Task<IActionResult> GetDesktopPreview(
     [FromRoute] Guid deviceId,
     [FromRoute] int targetProcessId,
@@ -135,10 +135,13 @@ public class DesktopPreviewController(
         deviceId,
         targetProcessId);
 
+      // The hub call answered with nothing, which is the agent's "did not respond" condition. The
+      // server itself was reachable, so the answer is 502 upstream-unreachable rather than 503
+      // server-unavailable, matching MapFailure's NoResponse mapping.
       return Problem(
         detail: "The device did not return a result.",
-        statusCode: StatusCodes.Status503ServiceUnavailable,
-        title: V1ProblemTitles.ServiceUnavailable);
+        statusCode: StatusCodes.Status502BadGateway,
+        title: V1ProblemTitles.BadGateway);
     }
 
     if (!result.IsSuccess)
@@ -149,10 +152,14 @@ public class DesktopPreviewController(
         targetProcessId,
         result.Reason);
 
+      // The hub call answered with a refusal, which is the agent reporting a conflict with the state
+      // on the device (no interactive session, no capture permission, etc.). MapFailure's RemoteFailure
+      // answers 409 with the agent's reason as detail, so the preview follows the same convention
+      // instead of telling the caller to retry a state that will not fix itself.
       return Problem(
         detail: result.Reason,
-        statusCode: StatusCodes.Status503ServiceUnavailable,
-        title: V1ProblemTitles.ServiceUnavailable);
+        statusCode: StatusCodes.Status409Conflict,
+        title: V1ProblemTitles.Conflict);
     }
 
     Response.ContentType = "image/jpeg";

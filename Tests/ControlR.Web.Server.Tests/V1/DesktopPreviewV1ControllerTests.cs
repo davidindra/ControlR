@@ -198,7 +198,7 @@ public class DesktopPreviewV1ControllerTests(ITestOutputHelper testOutput)
   }
 
   [Fact]
-  public async Task GetDesktopPreview_WhenTheAgentFails_ReturnsServiceUnavailable()
+  public async Task GetDesktopPreview_WhenTheAgentFails_ReturnsConflictWithTheAgentsReason()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.CreateScope();
@@ -213,11 +213,11 @@ public class DesktopPreviewV1ControllerTests(ITestOutputHelper testOutput)
       harness.Tenant.Id,
       TestContext.Current.CancellationToken);
 
-    AssertServiceUnavailable(result, "no interactive session is running");
+    AssertAgentRefusal(result, "no interactive session is running");
   }
 
   [Fact]
-  public async Task GetDesktopPreview_WhenTheAgentNeverAnswers_ReturnsServiceUnavailable()
+  public async Task GetDesktopPreview_WhenTheAgentNeverAnswers_ReturnsBadGateway()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.CreateScope();
@@ -233,7 +233,7 @@ public class DesktopPreviewV1ControllerTests(ITestOutputHelper testOutput)
       harness.Tenant.Id,
       TestContext.Current.CancellationToken);
 
-    AssertServiceUnavailable(result, "The device did not return a result.");
+    AssertAgentNoResponse(result);
   }
 
   [Fact]
@@ -293,6 +293,38 @@ public class DesktopPreviewV1ControllerTests(ITestOutputHelper testOutput)
     Assert.NotEqual(Guid.Empty, dto.RequesterId);
   }
 
+  /// <summary>
+  /// The hub call answered with nothing, so the action reports 502 upstream-unreachable, matching
+  /// <c>MapFailure</c>'s <c>NoResponse</c> mapping. The server itself is fine, so 503 would be the
+  /// wrong status.
+  /// </summary>
+  private static ProblemDetails AssertAgentNoResponse(IActionResult result)
+  {
+    var objectResult = Assert.IsType<ObjectResult>(result);
+    Assert.Equal(StatusCodes.Status502BadGateway, objectResult.StatusCode);
+    var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
+    Assert.Equal(StatusCodes.Status502BadGateway, problem.Status);
+    Assert.Equal("Bad gateway.", problem.Title);
+    Assert.Equal("The device did not return a result.", problem.Detail);
+    return problem;
+  }
+
+  /// <summary>
+  /// The hub call answered with a refusal, so the action reports the agent's reason at 409 to match
+  /// <c>MapFailure</c>'s <c>RemoteFailure</c> mapping. 503 with a retry-style detail would send the
+  /// caller back into the same refusal.
+  /// </summary>
+  private static ProblemDetails AssertAgentRefusal(IActionResult result, string expectedDetail)
+  {
+    var objectResult = Assert.IsType<ObjectResult>(result);
+    Assert.Equal(StatusCodes.Status409Conflict, objectResult.StatusCode);
+    var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
+    Assert.Equal(StatusCodes.Status409Conflict, problem.Status);
+    Assert.Equal("Conflict.", problem.Title);
+    Assert.Equal(expectedDetail, problem.Detail);
+    return problem;
+  }
+
   private static ProblemDetails AssertNotFound(IActionResult result)
   {
     var objectResult = Assert.IsType<ObjectResult>(result);
@@ -311,17 +343,6 @@ public class DesktopPreviewV1ControllerTests(ITestOutputHelper testOutput)
   {
     var recorder = Assert.IsType<RecordingHubStreamStore>(harness.HubStreamStore);
     Assert.Equal([HubStreamExpiration.DesktopPreview], recorder.CreatedSessions.Select(x => x.Expiration));
-  }
-
-  private static ProblemDetails AssertServiceUnavailable(IActionResult result, string expectedDetail)
-  {
-    var objectResult = Assert.IsType<ObjectResult>(result);
-    Assert.Equal(StatusCodes.Status503ServiceUnavailable, objectResult.StatusCode);
-    var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
-    Assert.Equal(StatusCodes.Status503ServiceUnavailable, problem.Status);
-    Assert.Equal("Service unavailable.", problem.Title);
-    Assert.Equal(expectedDetail, problem.Detail);
-    return problem;
   }
 
   /// <summary>

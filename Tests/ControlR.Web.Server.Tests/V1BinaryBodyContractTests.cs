@@ -67,21 +67,6 @@ public class V1BinaryBodyContractTests(ITestOutputHelper testOutput)
     Assert.Equal(new HashSet<string> { "file", "targetSaveDirectory" }, required);
   }
 
-  private async Task<JsonDocument> LoadDocument(string path)
-  {
-    using var testServer = await TestWebServerBuilder.CreateTestServer(
-      _testOutput,
-      settings: new Dictionary<string, string?>
-      {
-        { "AppOptions:EnableScalarUi", "true" },
-      });
-
-    var json = await testServer.Factory.CreateClient()
-      .GetStringAsync(path, TestContext.Current.CancellationToken);
-
-    return JsonDocument.Parse(json);
-  }
-
   /// <summary>
   /// Yields every operation response whose status starts with <paramref name="statusPrefix"/> and
   /// declares no content.
@@ -112,5 +97,20 @@ public class V1BinaryBodyContractTests(ITestOutputHelper testOutput)
         }
       }
     }
+  }
+
+  private async Task<JsonDocument> LoadDocument(string path)
+  {
+    using var testServer = await TestWebServerBuilder.CreateTestServer(
+      _testOutput,
+      settings: new Dictionary<string, string?>
+      {
+        { "AppOptions:EnableScalarUi", "true" },
+      });
+
+    var json = await testServer.Factory.CreateClient()
+      .GetStringAsync(path, TestContext.Current.CancellationToken);
+
+    return JsonDocument.Parse(json);
   }
 }

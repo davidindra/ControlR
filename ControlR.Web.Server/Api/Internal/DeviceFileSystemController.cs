@@ -192,7 +192,10 @@ public class DeviceFileSystemController : ControllerBase
       var contentDisposition = new ContentDispositionHeaderValue("attachment");
       contentDisposition.SetHttpFileName(requestResult.Value.FileDisplayName);
       Response.Headers[HeaderNames.ContentDisposition] = contentDisposition.ToString();
-      Response.Headers.ContentLength = fileSize;
+
+      // No Content-Length: the agent's snapshot is taken before it reads the file, so a file that
+      // changes during the transfer makes that header false, and Kestrel answers one byte past a
+      // declared length by faulting the response.
 
       await foreach (var chunk in signaler.Reader.ReadAllAsync(cancellationToken))
       {
@@ -657,7 +660,10 @@ public class DeviceFileSystemController : ControllerBase
       var contentDisposition = new ContentDispositionHeaderValue("attachment");
       contentDisposition.SetHttpFileName(requestResult.Value.FileDisplayName);
       Response.Headers[HeaderNames.ContentDisposition] = contentDisposition.ToString();
-      Response.Headers.ContentLength = fileSize;
+
+      // No Content-Length: the agent's snapshot is taken before it reads the file, so a file that
+      // changes during the transfer makes that header false, and Kestrel answers one byte past a
+      // declared length by faulting the response.
 
       await foreach (var chunk in signaler.Reader.ReadAllAsync(cancellationToken))
       {
