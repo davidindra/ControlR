@@ -128,7 +128,53 @@ public class DesktopPreviewV1ControllerTests(ITestOutputHelper testOutput)
     Assert.Equal(StatusCodes.Status409Conflict, objectResult.StatusCode);
     var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
     Assert.Equal("Conflict.", problem.Title);
-    Assert.Equal("Device is not connected.", problem.Detail);
+    Assert.Equal("Device is currently offline.", problem.Detail);
+    harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
+  }
+
+  /// <summary>
+  /// The device record still carries a connection id from before it dropped, so only the online flag
+  /// says the device cannot serve this. Addressing that stale id would reach nobody.
+  /// </summary>
+  [Fact]
+  public async Task GetDesktopPreview_WhenDeviceIsOfflineButKeepsAConnectionId_ReturnsConflict()
+  {
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    using var scope = testApp.CreateScope();
+    var harness = await Harness.CreateAsync(scope, "v1-preview-stale-connection@test.local");
+    await harness.SetDeviceOnline(isOnline: false, connectionId: OnlineConnectionId);
+
+    var result = await harness.Controller.GetDesktopPreview(
+      harness.Device.Id,
+      42,
+      harness.Tenant.Id,
+      TestContext.Current.CancellationToken);
+
+    var objectResult = Assert.IsType<ObjectResult>(result);
+    Assert.Equal(StatusCodes.Status409Conflict, objectResult.StatusCode);
+    harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
+  }
+
+  /// <summary>
+  /// The online flag was set but the connection id never landed, so the hub call the action would make
+  /// addresses an empty id and silently returns nothing.
+  /// </summary>
+  [Fact]
+  public async Task GetDesktopPreview_WhenDeviceIsOnlineWithoutAConnectionId_ReturnsConflict()
+  {
+    await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
+    using var scope = testApp.CreateScope();
+    var harness = await Harness.CreateAsync(scope, "v1-preview-missing-connection@test.local");
+    await harness.SetDeviceOnline(isOnline: true, connectionId: string.Empty);
+
+    var result = await harness.Controller.GetDesktopPreview(
+      harness.Device.Id,
+      42,
+      harness.Tenant.Id,
+      TestContext.Current.CancellationToken);
+
+    var objectResult = Assert.IsType<ObjectResult>(result);
+    Assert.Equal(StatusCodes.Status409Conflict, objectResult.StatusCode);
     harness.AgentHub.VerifyGet(x => x.Clients, Times.Never());
   }
 
@@ -359,7 +405,7 @@ public class DesktopPreviewV1ControllerTests(ITestOutputHelper testOutput)
       return body;
     }
 
-    public async Task SetDeviceOnline(bool isOnline)
+    public async Task SetDeviceOnline(bool isOnline, string? connectionId = null)
     {
       await using var db = Services.GetRequiredService<AppDb>();
       var device = await db.Devices.FirstAsync(
@@ -367,7 +413,7 @@ public class DesktopPreviewV1ControllerTests(ITestOutputHelper testOutput)
         TestContext.Current.CancellationToken);
 
       device.IsOnline = isOnline;
-      device.ConnectionId = isOnline ? OnlineConnectionId : string.Empty;
+      device.ConnectionId = connectionId ?? (isOnline ? OnlineConnectionId : string.Empty);
       await db.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 

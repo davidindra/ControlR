@@ -125,6 +125,7 @@ public class DeviceFileSystemController(
   /// </summary>
   [HttpPost("download-archive/{deviceId:guid}")]
   [DisableRequestTimeout]
+  [BinaryResponse("application/octet-stream")]
   [ProducesResponseType(StatusCodes.Status200OK)]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
@@ -186,6 +187,7 @@ public class DeviceFileSystemController(
   /// </summary>
   [HttpGet("download/{deviceId:guid}")]
   [DisableRequestTimeout]
+  [BinaryResponse("application/octet-stream")]
   [ProducesResponseType(StatusCodes.Status200OK)]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
@@ -279,6 +281,7 @@ public class DeviceFileSystemController(
   /// </summary>
   [HttpGet("logs/{deviceId:guid}/contents")]
   [DisableRequestTimeout]
+  [BinaryResponse("text/plain")]
   [ProducesResponseType(StatusCodes.Status200OK)]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
@@ -478,14 +481,15 @@ public class DeviceFileSystemController(
   }
 
   // Note: [FromForm] parameters are intentionally omitted, so large files aren't buffered into memory
-  // by model binding before the authorization and size checks run. FileUploadTransformer adds the form
-  // fields to the OpenAPI metadata instead.
+  // by model binding before the authorization and size checks run. [MultipartRequestBody] tells the
+  // OpenAPI document the form fields instead.
   /// <summary>
   /// Streams one uploaded file to the device, which writes it into the requested directory.
   /// </summary>
   [HttpPost("upload/{deviceId:guid}")]
   [DisableRequestSizeLimit]
   [DisableRequestTimeout]
+  [MultipartRequestBody]
   [ProducesResponseType<DeviceFileUploadResponseDto>(StatusCodes.Status200OK)]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
@@ -753,9 +757,12 @@ public class DeviceFileSystemController(
   }
 
   /// <summary>
-  /// Writes a transfer to the response and drains what the agent sends. The first chunk starts the
-  /// response, so a failure after that point cannot become a problem document and is left to
-  /// propagate rather than being answered with a status the client can no longer see.
+  /// Writes a transfer to the response and drains what the agent sends, declaring no Content-Length.
+  /// The size the agent gave is a snapshot taken before it read the file, so a file that grows or
+  /// shrinks during the transfer makes that header false, and Kestrel answers one byte past a declared
+  /// length by faulting the response. The first chunk starts the response, so a failure after that
+  /// point cannot become a problem document and is left to propagate rather than being answered with a
+  /// status the client can no longer see.
   /// </summary>
   private async Task<IActionResult> StreamTransfer(
     FileTransferSession session,
@@ -775,11 +782,6 @@ public class DeviceFileSystemController(
     var contentDisposition = new ContentDispositionHeaderValue(asAttachment ? "attachment" : "inline");
     contentDisposition.SetHttpFileName(session.FileName);
     Response.Headers[HeaderNames.ContentDisposition] = contentDisposition.ToString();
-
-    if (session.FileSize is long fileSize)
-    {
-      Response.Headers.ContentLength = fileSize;
-    }
 
     try
     {

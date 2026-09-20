@@ -37,6 +37,7 @@ public class DesktopPreviewController(
   /// </summary>
   [HttpGet("{deviceId:guid}/{targetProcessId:int}")]
   [DisableRequestTimeout]
+  [BinaryResponse("image/jpeg")]
   [ProducesResponseType(StatusCodes.Status200OK)]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, "application/problem+json")]
   [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized, "application/problem+json")]
@@ -94,17 +95,17 @@ public class DesktopPreviewController(
       return Forbid();
     }
 
-    // An offline device has an empty ConnectionId, and SignalR's Clients.Client("") is a no-op that
-    // returns nothing. A device that is not connected cannot serve the request, which is a conflict
-    // with its state rather than a server fault.
-    if (string.IsNullOrEmpty(device.ConnectionId))
+    // IsOnline is what states the device cannot serve this, which is a conflict with its state rather
+    // than a server fault. The connection id is checked too because the hub call below addresses it,
+    // and SignalR's Clients.Client("") is a no-op that returns nothing.
+    if (!device.IsOnline || string.IsNullOrWhiteSpace(device.ConnectionId))
     {
       _logger.LogWarning(
-        "Desktop preview request for device {DeviceId} rejected: device is not connected.",
+        "Desktop preview request for device {DeviceId} rejected: device is offline.",
         deviceId);
 
       return Problem(
-        detail: "Device is not connected.",
+        detail: "Device is currently offline.",
         statusCode: StatusCodes.Status409Conflict,
         title: V1ProblemTitles.Conflict);
     }

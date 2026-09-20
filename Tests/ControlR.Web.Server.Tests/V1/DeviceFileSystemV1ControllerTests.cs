@@ -641,7 +641,9 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     Assert.IsType<EmptyResult>(result);
     Assert.Equal<byte[]>([1, 2, 3], body.ToArray());
     Assert.Equal("application/octet-stream", harness.Controller.Response.ContentType);
-    Assert.Equal(3, harness.Controller.Response.ContentLength);
+    // The length the agent stated is a snapshot taken before it read the file, so it is not a promise
+    // the response can keep. Declaring it lets Kestrel abort the transfer over a single appended byte.
+    Assert.Null(harness.Controller.Response.ContentLength);
     AssertAttachmentNamed(harness, "packed.zip");
     AssertTransferLifetime(harness);
     Assert.Equal([OnlineConnectionId], harness.ConnectionIds);
@@ -833,7 +835,7 @@ public class DeviceFileSystemV1ControllerTests(ITestOutputHelper testOutput)
     Assert.IsType<EmptyResult>(result);
     Assert.Equal<byte[]>([4, 5, 6], body.ToArray());
     Assert.Equal("application/octet-stream", harness.Controller.Response.ContentType);
-    Assert.Equal(3, harness.Controller.Response.ContentLength);
+    Assert.Null(harness.Controller.Response.ContentLength);
     AssertAttachmentNamed(harness, "report.pdf");
     AssertTransferLifetime(harness);
     Assert.Equal([OnlineConnectionId], harness.ConnectionIds);

@@ -428,12 +428,13 @@ public class DeviceFileSystemController : ControllerBase
   }
 
   // Note: [FromForm] parameters are intentionally omitted, so large files aren't
-  // buffered into memory by model binding before auth and size checks are run. 
-  // The form  fields are added to OpenAPI metadata in FileUploadTransformer, and 
+  // buffered into memory by model binding before auth and size checks are run.
+  // [MultipartRequestBody] tells the OpenAPI document the form fields, and
   // file size limits are checked below.
   [HttpPost("upload/{deviceId:guid}")]
   [DisableRequestSizeLimit]
   [DisableRequestTimeout]
+  [MultipartRequestBody]
   [ApiDeprecated("/api/v1/device-file-system/upload/{deviceId}?tenantId={tenantId}", Note = "Use POST /api/v1/device-file-system/upload/{deviceId} with a required tenantId. The V1 response is the named DeviceFileUploadResponseDto instead of an ad hoc body, and V1 answers every failure with a ProblemDetails body.")]
   public async Task<IActionResult> UploadFile(
     [FromRoute] Guid deviceId,
