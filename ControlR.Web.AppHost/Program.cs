@@ -7,9 +7,11 @@ var pgPassword = builder.AddParameter("PgPassword", true);
 var pgDataVolume = builder.AddParameter("PgDataVolume", false);
 var volumeName = await pgDataVolume.Resource.GetValueAsync(CancellationToken.None) ?? "controlr-data";
 
-// 5432 belongs to the docker-compose postgres, whose containers persist past a debug session.
+// The dev database lives in the docker-compose volume, and this server mounts it directly.
+// Binding 5432 turns a running compose Postgres into a startup failure for this container
+// rather than a second writer on the same data directory.
 var postgres = builder
-    .AddPostgres(ServiceNames.Postgres, pgUser, pgPassword, port: 5434)
+    .AddPostgres(ServiceNames.Postgres, pgUser, pgPassword, port: 5432)
     .WithLifetime(ContainerLifetime.Persistent)
     .WithDataVolume(volumeName)
     .ExcludeFromManifest();
