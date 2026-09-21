@@ -333,9 +333,15 @@ public interface IUserCreator
           ["returnUrl"] = returnUrl
         };
 
-        var callbackUrl = confirmationBaseUrl is not null
+        // The configured public base URL wins over any caller-supplied base, because callers such as
+        // the registration endpoint filter derive theirs from the request's Host header.
+        var effectiveBaseUrl = string.IsNullOrWhiteSpace(_appOptions.CurrentValue.PublicBaseUrl)
+          ? confirmationBaseUrl
+          : _appOptions.CurrentValue.PublicBaseUrl;
+
+        var callbackUrl = effectiveBaseUrl is not null
           ? QueryHelpers.AddQueryString(
-            $"{confirmationBaseUrl.TrimEnd('/')}/Account/ConfirmEmail",
+            $"{effectiveBaseUrl.TrimEnd('/')}/Account/ConfirmEmail",
             queryParams)
           : _navigationManager.GetUriWithQueryParameters(
             _navigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,

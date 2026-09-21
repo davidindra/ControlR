@@ -239,6 +239,24 @@ public class AppOptions
   public bool PersistPasskeyLogin { get; init; }
 
   /// <summary>
+  /// The absolute base URL where this server is reachable by its users, e.g. "https://controlr.example.com".
+  /// </summary>
+  /// <remarks>
+  /// <para>
+  /// Links that are emailed to users (password reset, email confirmation, email change) are built
+  /// from this value. When it is not set, those links fall back to the host of the incoming request,
+  /// which an attacker controls via the <c>Host</c> header unless <c>AllowedHosts</c> is pinned or a
+  /// reverse proxy overwrites it. A forged host produces a genuine email from this server carrying a
+  /// valid token that points at the attacker's origin.
+  /// </para>
+  /// <para>
+  /// Set this on every internet-facing deployment. Include the scheme and, if non-standard, the port;
+  /// a trailing slash is optional.
+  /// </para>
+  /// </remarks>
+  public string? PublicBaseUrl { get; init; }
+
+  /// <summary>
   /// Whether users must confirm their email address before being allowed to log in.
   /// If true, you must also configure SMTP settings below.
   /// </summary>

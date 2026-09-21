@@ -80,6 +80,16 @@ public static class WebApplicationBuilderExtensions
       .GetSection(AppOptions.SectionKey)
       .Get<AppOptions>() ?? new AppOptions();
 
+    if (builder.Environment.IsProduction() &&
+        string.IsNullOrWhiteSpace(appOptions.PublicBaseUrl) &&
+        builder.Configuration["AllowedHosts"] is null or "" or "*")
+    {
+      Console.WriteLine(
+        "Links emailed to users will be built from the incoming request's Host header, which is " +
+        "attacker-controlled. Set AppOptions:PublicBaseUrl to this server's public URL, or pin " +
+        "AllowedHosts to its hostnames.");
+    }
+
     // Configure logging.
     builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
     builder.Services.AddStarRedactor();
@@ -255,6 +265,7 @@ public static class WebApplicationBuilderExtensions
     builder.Services.AddScoped<IUserPreferencesProvider>(services => services.GetRequiredService<IUserPreferencesManager>());
     builder.Services.AddScoped<IUserStorageManager, UserStorageManager>();
     builder.Services.AddScoped<IPublicServerSettingsProvider, PublicServerSettingsProviderServer>();
+    builder.Services.AddScoped<IPublicUrlProvider, PublicUrlProvider>();
     builder.Services.AddScoped<ITenantInvitesProvider, TenantInvitesProvider>();
     builder.Services.AddScoped<IServiceAccountManager, ServiceAccountManager>();
     builder.Services.AddScoped<IDeviceGroupManager, DeviceGroupManager>();

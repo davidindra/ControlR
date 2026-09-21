@@ -72,6 +72,18 @@ services:
       # that auto-disables after the first user is created.
       ControlR_AppOptions__EnablePublicRegistration: false
 
+      # The absolute base URL where this server is reachable by its users, e.g.
+      # "https://controlr.example.com".  Links emailed to users (password reset, email
+      # confirmation, email change) are built from this value.  Leave it unset and those links
+      # fall back to the Host header of the incoming request, which a caller controls: a forged
+      # host produces a genuine email from this server carrying a valid token that points at the
+      # attacker's origin.  Set this on every internet-facing deployment.
+      ControlR_AppOptions__PublicBaseUrl: ""
+
+      # The hostnames this server will answer to, semicolon-separated.  Pinning this rejects
+      # requests carrying a forged Host header before they reach the application.  "*" allows any.
+      ControlR_AllowedHosts: "*"
+
       # Allows devices to self-register without requiring an installer key.
       ControlR_AppOptions__AllowAgentsToSelfBootstrap: false
 
