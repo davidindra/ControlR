@@ -236,103 +236,39 @@ public class AgentHub(
     }
   }
 
-  [Obsolete("This method is deprecated. Please use UpdateDeviceSigned instead.")]
-  public async Task<HubResult<InternalDtos.DeviceResponseDto>> UpdateDevice(DeviceUpdateRequestDto agentDto)
-  {
-    try
-    {
-      var device = await _appDb.Devices.FindAsync(agentDto.Id);
-      if (device is not null && !string.IsNullOrEmpty(device.PublicKey))
-      {
-        return HubResult.Fail<InternalDtos.DeviceResponseDto>("Device requires signed updates.");
-      }
-
-      if (_serverOptions.Value.DecommissionServer)
-      {
-        return await HandleAgentUpdateForDecommission(agentDto, device);
-      }
-
-      // Self-bootstrap: only permitted when exactly one tenant exists.
-      // Multi-tenant deployments must use installer keys with an explicit tenant.
-      if (_appOptions.Value.AllowAgentsToSelfBootstrap && agentDto.TenantId == Guid.Empty)
-      {
-        var tenants = await _appDb.Tenants
-          .OrderByDescending(x => x.CreatedAt)
-          .Take(2)
-          .ToListAsync();
-
-        if (tenants.Count == 0)
-        {
-          return HubResult.Fail<InternalDtos.DeviceResponseDto>("No tenants found.");
-        }
-
-        if (tenants.Count > 1)
-        {
-          return HubResult.Fail<InternalDtos.DeviceResponseDto>(
-            "Self-bootstrap is only allowed on single-tenant servers. Use an installer key instead.");
-        }
-
-        // Update the DTO with the assigned TenantId
-        agentDto = agentDto with { TenantId = tenants[0].Id };
-      }
-
-      if (agentDto.TenantId == Guid.Empty)
-      {
-        return HubResult.Fail<InternalDtos.DeviceResponseDto>("Invalid tenant ID.");
-      }
-
-      if (!await _appDb.Tenants.AnyAsync(x => x.Id == agentDto.TenantId))
-      {
-        return HubResult.Fail<InternalDtos.DeviceResponseDto>("Invalid tenant ID.");
-      }
-
-      var remoteIp = Context.GetHttpContext()?.Connection.RemoteIpAddress;
-      var connectionContext = new DeviceConnectionContext(
-        ConnectionId: Context.ConnectionId,
-        RemoteIpAddress: remoteIp,
-        LastSeen: _timeProvider.GetLocalNow(),
-        IsOnline: true
-      );
-
-      var updateResult = await UpdateDeviceEntity(agentDto, connectionContext);
-
-      if (!updateResult.IsSuccess)
-      {
-        return HubResult.Fail<InternalDtos.DeviceResponseDto>(updateResult.Reason);
-      }
-
-      var deviceEntity = updateResult.Value;
-
-      var isOutdated = await GetIsAgentOutdated(deviceEntity);
-      Device = deviceEntity.ToInternalResponseDto(isOutdated);
-
-      await SendDeviceUpdate(deviceEntity, Device);
-
-      return HubResult.Ok(Device);
-    }
-    catch (Exception ex)
-    {
-      _logger.LogError(ex, "Error while updating device.");
-      return HubResult.Fail<InternalDtos.DeviceResponseDto>("An error occurred while updating the device.");
-    }
-  }
-
   public async Task<HubResult<InternalDtos.DeviceResponseDto>> UpdateDeviceSigned(SignedDto<DeviceUpdateRequestDto> signedDto)
   {
     try
     {
       var agentDto = signedDto.Dto;
 
-      // Only trust the agent-supplied key when self-bootstrap is enabled.
+      // A stored key always wins. An agent-supplied one is trusted only to bootstrap a device the
+      // server has never seen, and only when self-bootstrap is enabled.
       var device = await _appDb.Devices.FindAsync(agentDto.Id);
       var storedPublicKey = device?.PublicKey;
       
-      if (string.IsNullOrEmpty(storedPublicKey) && !_appOptions.Value.AllowAgentsToSelfBootstrap)
+      if (string.IsNullOrEmpty(storedPublicKey))
       {
-        _logger.LogWarning(
-          "Rejecting update from unknown device {DeviceId}. Self-bootstrap is disabled.",
-          agentDto.Id);
-        return HubResult.Fail<InternalDtos.DeviceResponseDto>("Unknown device.");
+        // A caller-supplied key is only ever trusted to bootstrap a device the server has never
+        // seen. Honouring one for a device that already exists would let any anonymous caller who
+        // knows its id re-key it and take over its hub connection. Adopting a key for an existing
+        // device goes through the installer-key-authenticated registration API instead.
+        if (device is not null)
+        {
+          _logger.LogWarning(
+            "Rejecting update for device {DeviceId}, which has no registered public key. " +
+            "Re-register the device with an installer key to adopt one.",
+            agentDto.Id);
+          return HubResult.Fail<InternalDtos.DeviceResponseDto>("Device has no registered public key.");
+        }
+
+        if (!_appOptions.Value.AllowAgentsToSelfBootstrap)
+        {
+          _logger.LogWarning(
+            "Rejecting update from unknown device {DeviceId}. Self-bootstrap is disabled.",
+            agentDto.Id);
+          return HubResult.Fail<InternalDtos.DeviceResponseDto>("Unknown device.");
+        }
       }
 
       var publicKeyBase64 = !string.IsNullOrEmpty(storedPublicKey)

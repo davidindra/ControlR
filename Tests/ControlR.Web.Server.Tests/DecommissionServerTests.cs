@@ -16,6 +16,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using ControlR.Libraries.Shared.Primitives;
 using ControlR.Libraries.Shared.Services.Encryption;
 using ControlR.Web.Server.Api.Internal;
 
@@ -23,6 +24,8 @@ namespace ControlR.Web.Server.Tests;
 
 public class DecommissionServerTests(ITestOutputHelper testOutput)
 {
+  private static readonly string _testPublicKeyBase64 = Convert.ToBase64String(new byte[32]);
+
   private readonly ITestOutputHelper _testOutput = testOutput;
 
   [Fact]
@@ -87,7 +90,7 @@ public class DecommissionServerTests(ITestOutputHelper testOutput)
   }
 
   [Fact]
-  public async Task UpdateDevice_WhenServerDecommissioned_UninstallsAgentAndDeletesDevice()
+  public async Task UpdateDeviceSigned_WhenServerDecommissioned_UninstallsAgentAndDeletesDevice()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.Services.CreateScope();
@@ -95,7 +98,7 @@ public class DecommissionServerTests(ITestOutputHelper testOutput)
 
     var tenant = await services.CreateTestTenant();
     var deviceId = Guid.NewGuid();
-    _ = await services.CreateTestDevice(tenant.Id, deviceId);
+    _ = await services.CreateTestDevice(tenant.Id, deviceId, _testPublicKeyBase64);
 
     await using var appDb = services.GetRequiredService<AppDb>();
     var timeProvider = services.GetRequiredService<TimeProvider>();
@@ -115,6 +118,15 @@ public class DecommissionServerTests(ITestOutputHelper testOutput)
     var mockHubStreamStore = new Mock<IHubStreamStore>();
     var mockAgentVersionProvider = new Mock<IAgentVersionProvider>();
     var mockKeyProvider = new Mock<IEd25519KeyProvider>();
+    mockKeyProvider
+      .Setup(x => x.ValidatePublicKeyBase64(It.IsAny<string>()))
+      .Returns(Result.Ok(new byte[32]));
+    mockKeyProvider
+      .Setup(x => x.Verify(It.IsAny<SignedDto<DeviceUpdateRequestDto>>(), It.IsAny<byte[]>()))
+      .Returns(true);
+    mockKeyProvider
+      .Setup(x => x.VerifyTimestamp(It.IsAny<SignedDto<DeviceUpdateRequestDto>>(), It.IsAny<TimeSpan>()))
+      .Returns(true);
     var mockLogger = new Mock<ILogger<AgentHub>>();
 
     var serverOptions = Microsoft.Extensions.Options.Options.Create(
@@ -171,7 +183,13 @@ public class DecommissionServerTests(ITestOutputHelper testOutput)
       ]);
 
     // Act
-    var result = await hub.UpdateDevice(deviceDto);
+    var signedDto = new SignedDto<DeviceUpdateRequestDto>(
+      deviceDto,
+      DateTimeOffset.UtcNow,
+      new byte[64],
+      _testPublicKeyBase64);
+
+    var result = await hub.UpdateDeviceSigned(signedDto);
 
     // Assert - HubResult indicates failure with the decommissioned message.
     Assert.False(result.IsSuccess);
@@ -194,7 +212,7 @@ public class DecommissionServerTests(ITestOutputHelper testOutput)
   }
 
   [Fact]
-  public async Task UpdateDevice_WhenServerNotDecommissioned_DoesNotCallUninstallAgent()
+  public async Task UpdateDeviceSigned_WhenServerNotDecommissioned_DoesNotCallUninstallAgent()
   {
     await using var testApp = await TestAppBuilder.CreateTestApp(_testOutput);
     using var scope = testApp.Services.CreateScope();
@@ -202,7 +220,7 @@ public class DecommissionServerTests(ITestOutputHelper testOutput)
 
     var tenant = await services.CreateTestTenant();
     var deviceId = Guid.NewGuid();
-    _ = await services.CreateTestDevice(tenant.Id, deviceId);
+    _ = await services.CreateTestDevice(tenant.Id, deviceId, _testPublicKeyBase64);
 
     await using var appDb = services.GetRequiredService<AppDb>();
     var timeProvider = services.GetRequiredService<TimeProvider>();
@@ -215,6 +233,15 @@ public class DecommissionServerTests(ITestOutputHelper testOutput)
     var mockHubStreamStore = new Mock<IHubStreamStore>();
     var mockAgentVersionProvider = new Mock<IAgentVersionProvider>();
     var mockKeyProvider = new Mock<IEd25519KeyProvider>();
+    mockKeyProvider
+      .Setup(x => x.ValidatePublicKeyBase64(It.IsAny<string>()))
+      .Returns(Result.Ok(new byte[32]));
+    mockKeyProvider
+      .Setup(x => x.Verify(It.IsAny<SignedDto<DeviceUpdateRequestDto>>(), It.IsAny<byte[]>()))
+      .Returns(true);
+    mockKeyProvider
+      .Setup(x => x.VerifyTimestamp(It.IsAny<SignedDto<DeviceUpdateRequestDto>>(), It.IsAny<TimeSpan>()))
+      .Returns(true);
     var mockLogger = new Mock<ILogger<AgentHub>>();
 
     // DecommissionServer is false (the default).
@@ -271,7 +298,13 @@ public class DecommissionServerTests(ITestOutputHelper testOutput)
       ]);
 
     // Act
-    var result = await hub.UpdateDevice(deviceDto);
+    var signedDto = new SignedDto<DeviceUpdateRequestDto>(
+      deviceDto,
+      DateTimeOffset.UtcNow,
+      new byte[64],
+      _testPublicKeyBase64);
+
+    var result = await hub.UpdateDeviceSigned(signedDto);
 
     // Assert - UninstallAgent was NOT called.
     mockCaller.Verify(
