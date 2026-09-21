@@ -317,7 +317,12 @@ public class AgentHub(
       // Allow agents to self-bootstrap when enabled. Only permitted when exactly one
       // tenant exists, so there's no ambiguity about where the agent lands. Multi-tenant
       // deployments must use installer keys, which carry an explicit tenant.
-      if (_appOptions.Value.AllowAgentsToSelfBootstrap && agentDto.TenantId == Guid.Empty)
+      //
+      // The restriction applies whenever self-bootstrap is the authority for this write, not only
+      // when the caller left the tenant unset. Gating it on an empty TenantId let a caller skip the
+      // single-tenant check simply by naming an existing tenant, which is the opposite of what the
+      // restriction is for. The tenant is taken from the server, never from the caller.
+      if (_appOptions.Value.AllowAgentsToSelfBootstrap && device is null)
       {
         var tenants = await _appDb.Tenants
           .OrderByDescending(x => x.CreatedAt)
