@@ -4,27 +4,52 @@ Severity reflects the external-attacker threat model in [README.md](README.md). 
 the behavior was read directly in the source and the control flow traced end to end; "needs
 verification" means the reasoning holds on paper but was not exercised against a running instance.
 
-| ID | Severity | Finding | Status |
-|---|---|---|---|
-| [F-01](#f-01) | High | Password-reset link is built from the request `Host` header, and `AllowedHosts` is `*` | Confirmed in source |
-| [F-02](#f-02) | High | Agent hub is unauthenticated; a device with no stored public key can be taken over and re-keyed by an anonymous client | Confirmed in source |
-| [F-03](#f-03) | Medium | `AllowAgentsToSelfBootstrap` lets an anonymous client create devices, and its single-tenant restriction is bypassed by naming a tenant explicitly | Confirmed in source |
-| [F-04](#f-04) | Medium | Relay: responder is unauthenticated, requester has no policy, session token compared non-constant-time, first arrival defines the session | Confirmed in source |
-| [F-05](#f-05) | Medium | Aspire dashboard is published on all host interfaces by the quick-start compose | Confirmed in source |
-| [F-06](#f-06) | Medium | No fallback authorization policy: an endpoint added without `[Authorize]` is anonymous | Confirmed in source |
-| [F-07](#f-07) | Medium | No security response headers anywhere; logon tokens travel in the query string | Confirmed in source |
-| [F-08](#f-08) | Medium | Cloudflare IPv6 ranges are never trusted — the IPv4 response is read twice | Confirmed in source |
-| [F-09](#f-09) | Low | `ForwardLimit = null` on both forwarded-headers branches | Confirmed in source |
-| [F-10](#f-10) | Low | Rate-limit and throttle state is per-instance in memory | Confirmed in source |
-| [F-11](#f-11) | Low | Data Protection keys stored unencrypted in the database by default | Confirmed in source |
-| [F-12](#f-12) | Low | `ServeUnknownFileTypes = true` on the vendored `/novnc` static provider | Confirmed in source |
-| [F-13](#f-13) | Info | No CodeQL or dependency-vulnerability workflow | Confirmed in source |
+| ID | Severity | CVSS v3.1 | Finding | Status |
+|---|---|---|---|---|
+| [F-01](#f-01) | High | 8.1 | Password-reset link is built from the request `Host` header, and `AllowedHosts` is `*` | Confirmed in source |
+| [F-02](#f-02) | High | 8.1 | Agent hub is unauthenticated; a device with no stored public key can be taken over and re-keyed by an anonymous client | Confirmed in source |
+| [F-03](#f-03) | Medium | 6.5 | `AllowAgentsToSelfBootstrap` lets an anonymous client create devices, and its single-tenant restriction is bypassed by naming a tenant explicitly | Confirmed in source |
+| [F-04](#f-04) | Medium | 6.8 | Relay: responder is unauthenticated, requester has no policy, session token compared non-constant-time, first arrival defines the session | Confirmed in source |
+| [F-05](#f-05) | Medium | 5.3 | Aspire dashboard is published on all host interfaces by the quick-start compose | Confirmed in source |
+| [F-06](#f-06) | Medium | — | No fallback authorization policy: an endpoint added without `[Authorize]` is anonymous | Confirmed in source |
+| [F-07](#f-07) | Medium | 4.2 | No security response headers anywhere; logon tokens travel in the query string | Confirmed in source |
+| [F-08](#f-08) | Medium | 5.3 | Cloudflare IPv6 ranges are never trusted — the IPv4 response is read twice | Confirmed in source |
+| [F-09](#f-09) | Low | 3.7 | `ForwardLimit = null` on both forwarded-headers branches | Confirmed in source |
+| [F-10](#f-10) | Low | — | Rate-limit and throttle state is per-instance in memory | Confirmed in source |
+| [F-11](#f-11) | Low | 6.0 | Data Protection keys stored unencrypted in the database by default | Confirmed in source |
+| [F-12](#f-12) | Low | — | `ServeUnknownFileTypes = true` on the vendored `/novnc` static provider | Confirmed in source |
+| [F-13](#f-13) | Info | — | No CodeQL or dependency-vulnerability workflow | Confirmed in source |
+
+## On the scoring
+
+Each finding that describes an exploitable instance carries a CVSS v3.1 **base** score with its
+full vector, so the number can be re-derived and argued with. No temporal or environmental metrics
+are applied — those depend on the deployment.
+
+Four findings are deliberately unscored. CVSS measures an instance, and an absent safety net
+(F-06), a scaling constraint (F-10), an unreachable code path (F-12) and a missing CI job (F-13)
+are none of those; a fabricated number would be worse than a blank. They keep their review
+severity.
+
+Highest score 8.1, median 6.0, nothing Critical.
+
+**Where the two gradings disagree.** Only F-11. CVSS scores a finding in isolation, so unencrypted
+Data Protection keys come out at 6.0 — read the database, forge any session cookie. This review
+rates it Low because the agreed threat model is an outsider and the database is `expose`-only.
+Both are correct for their question; if the model ever widens past the perimeter, F-11 moves up
+the list rather than down it.
+
+**Two scores flatter their findings.** F-03 and F-08 apply only when a non-default flag is set
+(`AllowAgentsToSelfBootstrap`, `EnableCloudflareProxySupport`). On a default deployment neither is
+reachable, and a base score has no way to say so.
 
 ---
 
 ## F-01
 
 **Password-reset link is built from the request `Host` header — High**
+
+CVSS v3.1 base **8.1** (High) — `CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N`
 
 `ControlR.Web.Server/Components/Account/Pages/ForgotPassword.razor:58`
 
@@ -59,6 +84,8 @@ the email-confirmation link the same way and should move with it — it already 
 ## F-02
 
 **Agent hub is unauthenticated; a device with no stored public key can be taken over — High**
+
+CVSS v3.1 base **8.1** (High) — `CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H`
 
 `ControlR.Web.Server/Hubs/AgentHub.cs`
 
@@ -122,6 +149,8 @@ item and report how many exist.
 
 **Self-bootstrap allows anonymous device creation and its tenant restriction is bypassable — Medium**
 
+CVSS v3.1 base **6.5** (Medium) — `CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L`
+
 `ControlR.Web.Server/Hubs/AgentHub.cs:549`
 
 ```csharp
@@ -153,6 +182,8 @@ tenant is unspecified, and document the flag as single-tenant-lab-only.
 ## F-04
 
 **Relay session controls are thin — Medium**
+
+CVSS v3.1 base **6.8** (Medium) — `CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:N`
 
 `Libraries/ControlR.Libraries.WebSocketRelay.Common/Middleware/WebSocketRelayMiddleware.cs`,
 `.../Sessions/SessionSignaler.cs`
@@ -189,6 +220,8 @@ the session so `GetOrAdd` cannot be squatted.
 
 **Aspire dashboard published on all interfaces — Medium**
 
+CVSS v3.1 base **5.3** (Medium) — `CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N`
+
 `docker-compose/docker-compose.yml:293`
 
 ```yaml
@@ -212,6 +245,8 @@ Fix: bind to loopback — `"127.0.0.1:18888:18888"` — and reach it through the
 ## F-06
 
 **No fallback authorization policy — Medium**
+
+CVSS v3.1 base: **not scored** — absent safety net, no exploitable instance.
 
 `ControlR.Web.Server/Startup/AuthorizationRegistrationExtensions.cs:52`
 
@@ -241,6 +276,8 @@ the handful of endpoints that need it, and add the guardrail test in
 
 **No security response headers — Medium**
 
+CVSS v3.1 base **4.2** (Medium) — `CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:L/A:N`
+
 A search across `ControlR.Web.Server` and `ControlR.Web.Client` for `Content-Security-Policy`,
 `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy` returns
 nothing. `Program.cs` sets HSTS in non-development and nothing else.
@@ -259,6 +296,8 @@ and a `Permissions-Policy` that denies what the UI does not use.
 ## F-08
 
 **Cloudflare IPv6 ranges are never trusted — Medium**
+
+CVSS v3.1 base **5.3** (Medium) — `CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N`
 
 `ControlR.Web.Server/Startup/ForwardedHeadersRegistrationExtensions.cs:37`
 
@@ -289,6 +328,8 @@ differ.
 
 **`ForwardLimit = null` — Low**
 
+CVSS v3.1 base **3.7** (Low) — `CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:N`
+
 Same file, both branches: `options.ForwardLimit = null` removes the cap on how many entries of
 `X-Forwarded-For` are processed. With a correct `KnownProxies`/`KnownIPNetworks` set this is
 bounded by the trust check, so it is not directly exploitable — but it removes the second line of
@@ -299,6 +340,8 @@ spoofing. Set it to the real hop count.
 
 **Rate-limit state is per-instance — Low**
 
+CVSS v3.1 base: **not scored** — scaling constraint, not a defect today.
+
 `AnonymousAuthRateLimitPolicy` uses an in-process fixed-window limiter, and both token handlers
 use `IMemoryCache`. Behind more than one replica the effective limit is multiplied by the replica
 count, and every restart clears the counters. Fine for the single-container deployment the
@@ -307,6 +350,8 @@ compose file describes; worth documenting as a constraint before anyone scales o
 ## F-11
 
 **Data Protection keys unencrypted at rest by default — Low**
+
+CVSS v3.1 base **6.0** (Medium) — `CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:N`
 
 `Startup/DataProtectionRegistrationExtensions.cs` persists keys to the database and, with the
 default `KeyProtectionOptions:EncryptKeys = false`, does not encrypt them. The code already prints
@@ -317,6 +362,8 @@ database disclosure into full account access.
 ## F-12
 
 **`ServeUnknownFileTypes` on the vendored novnc provider — Low**
+
+CVSS v3.1 base: **not scored** — no write path to the directory.
 
 `Program.cs`:
 
@@ -337,6 +384,8 @@ pin the submodule to a reviewed commit and keep it in the dependency-update loop
 ## F-13
 
 **No CodeQL or dependency scanning — Info**
+
+CVSS v3.1 base: **not scored** — process gap, not a vulnerability.
 
 `.github/workflows/` has build, test, publish and packaging workflows; none run CodeQL, a
 dependency vulnerability check, or container image scanning. `dependabot.yml` is present, which
